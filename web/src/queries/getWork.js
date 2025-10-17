@@ -4,6 +4,7 @@ export async function getWork() {
   const query = `*[_type == "work"] | order(year desc) {
     _id,
     name,
+    slug,
     title,
     type,
     year,
@@ -13,7 +14,10 @@ export async function getWork() {
         _id,
         playbackId,
         assetId,
-        status
+        status,
+        data {
+          duration
+        }
       }
     },
     thumbnails[] {

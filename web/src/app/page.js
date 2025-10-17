@@ -2,19 +2,58 @@
 import { useState, useEffect, useRef } from "react";
 import { getWork } from "../queries/getWork";
 import MuxPlayer from "@mux/mux-player-react";
+import Link from "next/link";
+
+function formatDuration(seconds) {
+  if (!seconds) return "";
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+}
 
 function VideoThumbnail({ playbackId, timestamp, isHovered }) {
   const playerRef = useRef(null);
+  const playPromiseRef = useRef(null);
 
   useEffect(() => {
     if (playerRef.current) {
       if (isHovered) {
-        playerRef.current.play();
+        // If there's a pending play promise, wait for it to resolve before playing
+        if (playPromiseRef.current) {
+          playPromiseRef.current
+            .then(() => {
+              if (playerRef.current && isHovered) {
+                playPromiseRef.current = playerRef.current.play();
+              }
+            })
+            .catch(() => {
+              // Ignore errors from interrupted play promises
+            });
+        } else {
+          playPromiseRef.current = playerRef.current.play();
+        }
       } else {
-        playerRef.current.pause();
-        playerRef.current.currentTime = timestamp
-          .split(":")
-          .reduce((acc, time) => 60 * acc + +time);
+        // If there's a pending play promise, wait for it to resolve before pausing
+        if (playPromiseRef.current) {
+          playPromiseRef.current
+            .then(() => {
+              if (playerRef.current) {
+                playerRef.current.pause();
+                playerRef.current.currentTime = timestamp
+                  .split(":")
+                  .reduce((acc, time) => 60 * acc + +time);
+              }
+            })
+            .catch(() => {
+              // Ignore errors from interrupted play promises
+            });
+        } else {
+          playerRef.current.pause();
+          playerRef.current.currentTime = timestamp
+            .split(":")
+            .reduce((acc, time) => 60 * acc + +time);
+        }
+        playPromiseRef.current = null;
       }
     }
   }, [isHovered, timestamp]);
@@ -39,7 +78,6 @@ function VideoThumbnail({ playbackId, timestamp, isHovered }) {
 
 export default function Home() {
   const [work, setWork] = useState([]);
-  const [filteredWork, setFilteredWork] = useState([]);
   const [activeFilter, setActiveFilter] = useState("both");
   const [loading, setLoading] = useState(true);
   const [hoveredWork, setHoveredWork] = useState(null);
@@ -49,7 +87,6 @@ export default function Home() {
       try {
         const workData = await getWork();
         setWork(workData);
-        setFilteredWork(workData);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching work:", error);
@@ -60,45 +97,51 @@ export default function Home() {
     fetchWork();
   }, []);
 
-  const filterWork = (category) => {
+  const setFilter = (category) => {
     setActiveFilter(category);
-    if (category === "both") {
-      setFilteredWork(work);
-    } else {
-      setFilteredWork(work.filter((item) => item.category === category));
-    }
   };
 
   return (
     <main>
       <section className="h-[50svh] flex justify-start items-center px-4">
-        <div className="space-x-5">
+        <div className="space-x-2 flex">
           <button
-            onClick={() => filterWork("both")}
-            className={`px-4 py-2 rounded ${
-              activeFilter === "both" ? "bg-black text-white" : "bg-gray-200"
-            }`}
+            onClick={() => setFilter("both")}
+            className="flex flex-row gap-2 items-baseline"
           >
+            <div
+              className={`w-3 h-3 flex ${
+                activeFilter === "both"
+                  ? "bg-black border border-black text-white"
+                  : " border"
+              }`}
+            />
             Both
           </button>
           <button
-            onClick={() => filterWork("narrative")}
-            className={`px-4 py-2 rounded ${
-              activeFilter === "narrative"
-                ? "bg-black text-white"
-                : "bg-gray-200"
-            }`}
+            onClick={() => setFilter("narrative")}
+            className="flex flex-row gap-2 items-baseline"
           >
+            <div
+              className={`w-3 h-3 flex ${
+                activeFilter === "narrative"
+                  ? "bg-black border border-black text-white"
+                  : " border"
+              }`}
+            />
             Narrative
           </button>
           <button
-            onClick={() => filterWork("commercial")}
-            className={`px-4 py-2 rounded ${
-              activeFilter === "commercial"
-                ? "bg-black text-white"
-                : "bg-gray-200"
-            }`}
+            onClick={() => setFilter("commercial")}
+            className="flex flex-row gap-2 items-baseline"
           >
+            <div
+              className={`w-3 h-3 flex ${
+                activeFilter === "commercial"
+                  ? "bg-black border border-black text-white"
+                  : " border"
+              }`}
+            />
             Commercial
           </button>
         </div>
@@ -110,20 +153,29 @@ export default function Home() {
           <p>Loading work...</p>
         ) : (
           <div className="">
-            {filteredWork.map((item) => (
-              <div
+            {work.map((item) => (
+              <Link
                 key={item._id}
-                className="flex flex-col gap-2"
+                href={`/work/${item.slug?.current}`}
+                className={`flex flex-col gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors ${
+                  activeFilter !== "both" && item.category !== activeFilter
+                    ? "opacity-20 cursor-none pointer-events-none"
+                    : ""
+                }`}
                 onMouseEnter={() => setHoveredWork(item._id)}
                 onMouseLeave={() => setHoveredWork(null)}
               >
                 <div className="flex flex-row space-x-4">
                   <h3 className="">{item.name}</h3>
-                  <h4 className="">{item.title}</h4>
-                  <p className="text-gray-600">{item.type}</p>
-                  <p className="text-gray-600">{item.year}</p>
-                  <p className="text-gray-600">{item.category}</p>
-                  <p className="text-gray-600">1:39</p>
+                  {item.title && <h4 className="">{item.title}</h4>}
+                  {item.type && <p className="text-gray-600">{item.type}</p>}
+                  {item.year && <p className="text-gray-600">{item.year}</p>}
+                  {item.category && (
+                    <p className="text-gray-600">{item.category}</p>
+                  )}
+                  <p className="text-gray-600">
+                    {formatDuration(item.video?.asset?.data?.duration)}
+                  </p>
                 </div>
                 {item.video?.asset?.playbackId && item.thumbnails && (
                   <div className="flex gap-2 over">
@@ -138,6 +190,7 @@ export default function Home() {
                               .reduce((acc, time) => 60 * acc + +time)}`}
                             alt={`Thumbnail at ${thumbnail.timestamp}`}
                             style={{ width: "120px", height: "68px" }}
+                            className="object-cover"
                           />
                         ) : (
                           <VideoThumbnail
@@ -150,15 +203,13 @@ export default function Home() {
                     ))}
                   </div>
                 )}
-              </div>
+              </Link>
             ))}
           </div>
         )}
 
-        {!loading && filteredWork.length === 0 && (
-          <p className="text-gray-500 text-center">
-            No work found for the selected category.
-          </p>
+        {!loading && work.length === 0 && (
+          <p className="text-gray-500 text-center">No work found.</p>
         )}
       </section>
     </main>
