@@ -4,6 +4,20 @@ export default {
   name: "work",
   title: "Work",
   type: "document",
+  preview: {
+    select: {
+      name: "name",
+      title: "title",
+      category: "category",
+    },
+    prepare(selection) {
+      const { name, title, category } = selection;
+      return {
+        title: `${name}${title ? ` – ${title}` : ""}`,
+        subtitle: category,
+      };
+    },
+  },
   fields: [
     {
       name: "name",

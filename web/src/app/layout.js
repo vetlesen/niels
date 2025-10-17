@@ -1,6 +1,6 @@
 import "./globals.css";
-import Nav from "../components/nav"
-
+import Nav from "../components/nav";
+import { ThemeProvider } from "../contexts/ThemeContext";
 
 export const metadata = {
   title: "Create Next App",
@@ -10,11 +10,11 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body
-        className={`antialiased`}
-      >
-        <Nav />
-        {children}
+      <body className={`antialiased`}>
+        <ThemeProvider>
+          <Nav />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

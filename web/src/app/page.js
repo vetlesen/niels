@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { getWork } from "../queries/getWork";
 import MuxPlayer from "@mux/mux-player-react";
 import Link from "next/link";
+import { useTheme } from "../contexts/ThemeContext";
 
 function formatDuration(seconds) {
   if (!seconds) return "";
@@ -78,9 +79,9 @@ function VideoThumbnail({ playbackId, timestamp, isHovered }) {
 
 export default function Home() {
   const [work, setWork] = useState([]);
-  const [activeFilter, setActiveFilter] = useState("both");
   const [loading, setLoading] = useState(true);
   const [hoveredWork, setHoveredWork] = useState(null);
+  const { activeFilter, setFilter } = useTheme();
 
   useEffect(() => {
     async function fetchWork() {
@@ -97,10 +98,6 @@ export default function Home() {
     fetchWork();
   }, []);
 
-  const setFilter = (category) => {
-    setActiveFilter(category);
-  };
-
   return (
     <main>
       <section className="h-[50svh] flex justify-start items-center px-4">
@@ -112,7 +109,9 @@ export default function Home() {
             <div
               className={`w-3 h-3 flex ${
                 activeFilter === "both"
-                  ? "bg-black border border-black text-white"
+                  ? activeFilter === "narrative"
+                    ? "bg-white border border-white text-black"
+                    : "bg-black border border-black text-white"
                   : " border"
               }`}
             />
@@ -125,7 +124,7 @@ export default function Home() {
             <div
               className={`w-3 h-3 flex ${
                 activeFilter === "narrative"
-                  ? "bg-black border border-black text-white"
+                  ? "bg-white border border-white text-black"
                   : " border"
               }`}
             />
@@ -138,7 +137,9 @@ export default function Home() {
             <div
               className={`w-3 h-3 flex ${
                 activeFilter === "commercial"
-                  ? "bg-black border border-black text-white"
+                  ? activeFilter === "narrative"
+                    ? "bg-white border border-white text-black"
+                    : "bg-black border border-black text-white"
                   : " border"
               }`}
             />
@@ -152,28 +153,92 @@ export default function Home() {
         {loading ? (
           <p>Loading work...</p>
         ) : (
-          <div className="">
+          <>
             {work.map((item) => (
               <Link
                 key={item._id}
                 href={`/work/${item.slug?.current}`}
-                className={`flex flex-col gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded transition-colors ${
+                className={`flex flex-col gap-2 cursor-pointer p-2 rounded transition-all duration-500 ease-in-out hover:opacity-80 ${
                   activeFilter !== "both" && item.category !== activeFilter
-                    ? "opacity-20 cursor-none pointer-events-none"
+                    ? "opacity-10 cursor-none pointer-events-none"
                     : ""
                 }`}
                 onMouseEnter={() => setHoveredWork(item._id)}
                 onMouseLeave={() => setHoveredWork(null)}
               >
                 <div className="flex flex-row space-x-4">
-                  <h3 className="">{item.name}</h3>
-                  {item.title && <h4 className="">{item.title}</h4>}
-                  {item.type && <p className="text-gray-600">{item.type}</p>}
-                  {item.year && <p className="text-gray-600">{item.year}</p>}
-                  {item.category && (
-                    <p className="text-gray-600">{item.category}</p>
+                  <h3
+                    className={`transition-colors duration-500 ease-in-out ${
+                      activeFilter === "narrative"
+                        ? "text-white"
+                        : activeFilter === "commercial"
+                        ? "text-black"
+                        : "text-gray-900"
+                    }`}
+                  >
+                    {item.name}
+                  </h3>
+                  {item.title && (
+                    <h4
+                      className={`transition-colors duration-500 ease-in-out ${
+                        activeFilter === "narrative"
+                          ? "text-white"
+                          : activeFilter === "commercial"
+                          ? "text-black"
+                          : "text-gray-900"
+                      }`}
+                    >
+                      {item.title}
+                    </h4>
                   )}
-                  <p className="text-gray-600">
+                  {item.type && (
+                    <p
+                      className={`opacity-60 transition-colors duration-500 ease-in-out ${
+                        activeFilter === "narrative"
+                          ? "text-white"
+                          : activeFilter === "commercial"
+                          ? "text-black"
+                          : "text-gray-900"
+                      }`}
+                    >
+                      {item.type}
+                    </p>
+                  )}
+                  {item.year && (
+                    <p
+                      className={`opacity-60 transition-colors duration-500 ease-in-out ${
+                        activeFilter === "narrative"
+                          ? "text-white"
+                          : activeFilter === "commercial"
+                          ? "text-black"
+                          : "text-gray-900"
+                      }`}
+                    >
+                      {item.year}
+                    </p>
+                  )}
+                  {item.category && (
+                    <p
+                      className={`opacity-60 transition-colors duration-500 ease-in-out ${
+                        activeFilter === "narrative"
+                          ? "text-white"
+                          : activeFilter === "commercial"
+                          ? "text-black"
+                          : "text-gray-900"
+                      }`}
+                    >
+                      {item.category}
+                    </p>
+                  )}
+                  <p
+                    className={`opacity-60 transition-colors duration-500 ease-in-out ${
+                      activeFilter === "narrative"
+                        ? "text-white"
+                        : activeFilter === "commercial"
+                        ? "text-black"
+                        : "text-gray-900"
+                    }`}
+                  >
                     {formatDuration(item.video?.asset?.data?.duration)}
                   </p>
                 </div>
@@ -205,7 +270,7 @@ export default function Home() {
                 )}
               </Link>
             ))}
-          </div>
+          </>
         )}
 
         {!loading && work.length === 0 && (
