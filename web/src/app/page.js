@@ -101,7 +101,7 @@ export default function Home() {
   return (
     <main>
       <section className="h-[50svh] flex justify-start items-center px-4">
-        <div className="space-x-2 flex">
+        <div className="space-x-2 flex sticky top-2">
           <button
             onClick={() => setFilter("both")}
             className="flex flex-row gap-2 items-baseline uppercase"

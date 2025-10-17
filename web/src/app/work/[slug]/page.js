@@ -45,11 +45,11 @@ export default function WorkDetail({ params }) {
   }
 
   return (
-    <main className="px-4 py-8">
-      <div className="">
+    <main className="">
+      <div className="pt-10">
         {/* Video */}
         {work.video?.asset?.playbackId && (
-          <div className="mb-8">
+          <div className="mb-8 px-4">
             <MuxPlayer
               playbackId={work.video.asset.playbackId}
               controls
@@ -60,14 +60,14 @@ export default function WorkDetail({ params }) {
         )}
 
         {/* Work Details */}
-        <div className="mb-8">
+        <div className="mb-8 px-4">
           <h1 className="">{work.name}</h1>
           <h2 className="">{work.title}</h2>
           <p className="">{work.type}</p>
           <p className="">{work.year}</p>
         </div>
 
-        <div className="w-full grid grid-cols-1 md:grid-cols-2">
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 px-4">
           {/* Credits */}
           {work.credits && work.credits.length > 0 && (
             <div className="grid-span-1">
@@ -100,7 +100,7 @@ export default function WorkDetail({ params }) {
               </div>
             ) : null}
             {work.info && work.info.length > 0 && (
-              <div className=" ">
+              <>
                 <h3 className="mb-2 opacity-50 uppercase text-sm">Info</h3>
 
                 <PortableText
@@ -135,7 +135,7 @@ export default function WorkDetail({ params }) {
                     },
                   }}
                 />
-              </div>
+              </>
             )}
           </div>
         </div>

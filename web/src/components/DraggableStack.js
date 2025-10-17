@@ -7,13 +7,17 @@ function DraggableImage({
   index,
   totalImages,
   onBringToFront,
-  isExpanded,
-  isCollected,
-  expandedPosition,
-  collectedPosition,
-  forceUpdate,
+  cardRefs,
 }) {
   const imageRef = useRef(null);
+
+  // Store ref in parent's array
+  useEffect(() => {
+    if (cardRefs && cardRefs.current) {
+      cardRefs.current[index] = imageRef;
+    }
+  }, [index, cardRefs]);
+
   const [isDragging, setIsDragging] = useState(false);
   const [position, setPosition] = useState({
     x: index * 5 + Math.random() * 20 - 10,
@@ -25,34 +29,34 @@ function DraggableImage({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
   const [zIndex, setZIndex] = useState(totalImages - index);
-  const [hasBeenDragged, setHasBeenDragged] = useState(false);
-
-  // Update position when expand/collect state changes
-  useEffect(() => {
-    if (isExpanded && expandedPosition) {
-      setPosition(expandedPosition);
-      setRotation(0);
-      setHasBeenDragged(false); // Reset drag state when expanding
-    } else if (isCollected && collectedPosition) {
-      setPosition(collectedPosition);
-      setRotation(index * 2 - 4 + Math.random() * 8 - 4);
-      setHasBeenDragged(false); // Reset drag state when collecting
-    }
-  }, [
-    isExpanded,
-    isCollected,
-    expandedPosition,
-    collectedPosition,
-    index,
-    forceUpdate,
-  ]);
 
   const handleMouseDown = (e) => {
     e.preventDefault();
+    // Remove any transition when starting to drag
+    if (imageRef.current) {
+      imageRef.current.style.transition = "";
+
+      // Sync React state with actual DOM position
+      const transform = imageRef.current.style.transform;
+      const match = transform.match(
+        /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
+      );
+      if (match) {
+        const currentX = parseFloat(match[1]);
+        const currentY = parseFloat(match[2]);
+        const currentRotation = parseFloat(match[3]);
+        setPosition({ x: currentX, y: currentY });
+        setRotation(currentRotation);
+        setInitialPosition({ x: currentX, y: currentY });
+      } else {
+        setInitialPosition(position);
+      }
+    } else {
+      setInitialPosition(position);
+    }
+
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
-    setInitialPosition(position);
-    setHasBeenDragged(true);
     onBringToFront(index);
   };
 
@@ -67,6 +71,109 @@ function DraggableImage({
     const newY = initialPosition.y + deltaY;
 
     // Add resistance at edges (simulate paper friction)
+    const boundaryResistance = 0.6;
+    const container = imageRef.current?.parentElement?.parentElement;
+
+    if (container) {
+      const rect = container.getBoundingClientRect();
+      const imageRect = imageRef.current.getBoundingClientRect();
+
+      let finalX = newX;
+      let finalY = newY;
+
+      // Apply boundary resistance with more generous margins
+      const margin = 200;
+      const hitBoundary =
+        newX < -margin ||
+        newX > rect.width - imageRect.width + margin ||
+        newY < -margin ||
+        newY > rect.height - imageRect.height + margin;
+
+      if (newX < -margin)
+        finalX = -margin + (newX + margin) * boundaryResistance;
+      if (newX > rect.width - imageRect.width + margin) {
+        finalX =
+          rect.width -
+          imageRect.width +
+          margin +
+          (newX - (rect.width - imageRect.width + margin)) * boundaryResistance;
+      }
+      if (newY < -margin)
+        finalY = -margin + (newY + margin) * boundaryResistance;
+      if (newY > rect.height - imageRect.height + margin) {
+        finalY =
+          rect.height -
+          imageRect.height +
+          margin +
+          (newY - (rect.height - imageRect.height + margin)) *
+            boundaryResistance;
+      }
+
+      setPosition({ x: finalX, y: finalY });
+    } else {
+      setPosition({ x: newX, y: newY });
+    }
+
+    // Calculate rotation based on movement (simulate paper physics) - reduced sensitivity
+    const rotationChange = deltaX * 0.02 + deltaY * 0.01;
+    setRotation((prev) => prev + rotationChange * 0.05);
+  };
+
+  const handleMouseUp = () => {
+    console.log(`🖱️ Card ${index} RELEASED at position:`, {
+      x: position.x.toFixed(1),
+      y: position.y.toFixed(1),
+      rotation: rotation.toFixed(1),
+    });
+    setIsDragging(false);
+    // Add some settling by slightly reducing rotation
+    setRotation((prev) => prev * 0.9);
+  };
+
+  // Touch events for mobile
+  const handleTouchStart = (e) => {
+    const touch = e.touches[0];
+    // Remove any transition when starting to drag
+    if (imageRef.current) {
+      imageRef.current.style.transition = "";
+
+      // Sync React state with actual DOM position
+      const transform = imageRef.current.style.transform;
+      const match = transform.match(
+        /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
+      );
+      if (match) {
+        const currentX = parseFloat(match[1]);
+        const currentY = parseFloat(match[2]);
+        const currentRotation = parseFloat(match[3]);
+        setPosition({ x: currentX, y: currentY });
+        setRotation(currentRotation);
+        setInitialPosition({ x: currentX, y: currentY });
+      } else {
+        setInitialPosition(position);
+      }
+    } else {
+      setInitialPosition(position);
+    }
+
+    setIsDragging(true);
+    setDragStart({ x: touch.clientX, y: touch.clientY });
+    onBringToFront(index);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - dragStart.x;
+    const deltaY = touch.clientY - dragStart.y;
+
+    // Calculate new position
+    const newX = initialPosition.x + deltaX;
+    const newY = initialPosition.y + deltaY;
+
+    // Add resistance at edges (simulate paper friction) - same as mouse
     const boundaryResistance = 0.6;
     const container = imageRef.current?.parentElement?.parentElement;
 
@@ -109,40 +216,12 @@ function DraggableImage({
     setRotation((prev) => prev + rotationChange * 0.05);
   };
 
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    // Add some settling by slightly reducing rotation
-    setRotation((prev) => prev * 0.9);
-  };
-
-  // Touch events for mobile
-  const handleTouchStart = (e) => {
-    const touch = e.touches[0];
-    setIsDragging(true);
-    setDragStart({ x: touch.clientX, y: touch.clientY });
-    setInitialPosition(position);
-    setHasBeenDragged(true);
-    onBringToFront(index);
-  };
-
-  const handleTouchMove = (e) => {
-    if (!isDragging) return;
-    e.preventDefault();
-
-    const touch = e.touches[0];
-    const deltaX = touch.clientX - dragStart.x;
-    const deltaY = touch.clientY - dragStart.y;
-
-    const newX = initialPosition.x + deltaX;
-    const newY = initialPosition.y + deltaY;
-
-    setPosition({ x: newX, y: newY });
-
-    const rotationChange = deltaX * 0.02 + deltaY * 0.01;
-    setRotation((prev) => prev + rotationChange * 0.05);
-  };
-
   const handleTouchEnd = () => {
+    console.log(`👆 Card ${index} RELEASED at position:`, {
+      x: position.x.toFixed(1),
+      y: position.y.toFixed(1),
+      rotation: rotation.toFixed(1),
+    });
     setIsDragging(false);
     setRotation((prev) => prev * 0.9);
   };
@@ -155,6 +234,7 @@ function DraggableImage({
         passive: false,
       });
       document.addEventListener("touchend", handleTouchEnd);
+      document.addEventListener("touchcancel", handleTouchEnd);
     }
 
     return () => {
@@ -162,6 +242,7 @@ function DraggableImage({
       document.removeEventListener("mouseup", handleMouseUp);
       document.removeEventListener("touchmove", handleTouchMove);
       document.removeEventListener("touchend", handleTouchEnd);
+      document.removeEventListener("touchcancel", handleTouchEnd);
     };
   }, [isDragging, dragStart, initialPosition]);
 
@@ -170,11 +251,12 @@ function DraggableImage({
       ref={imageRef}
       className={`absolute cursor-grab ${
         isDragging ? "cursor-grabbing" : ""
-      } transition-all duration-500 ease-out select-none`}
+      } select-none`}
       style={{
         transform: `translate(${position.x}px, ${position.y}px) rotate(${rotation}deg)`,
         transformOrigin: "center center",
         zIndex: zIndex,
+        touchAction: "none", // Prevent default touch behaviors
       }}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
@@ -205,35 +287,81 @@ function DraggableImage({
 
 // Main DraggableStack component
 export default function DraggableStack({ stackImages = [] }) {
-  const [maxZIndex, setMaxZIndex] = useState(stackImages.length);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isCollected, setIsCollected] = useState(false);
-  const [forceUpdate, setForceUpdate] = useState(0);
+  // Safety check for stackImages
+  const safeStackImages = stackImages || [];
+  const [maxZIndex, setMaxZIndex] = useState(safeStackImages.length);
+  const cardRefs = useRef([]);
+
+  const logAllCardPositions = (event) => {
+    console.log(`📍 ALL CARD POSITIONS (${event}):`);
+    cardRefs.current.forEach((ref, index) => {
+      if (ref && ref.current) {
+        const transform = ref.current.style.transform;
+        const match = transform.match(
+          /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
+        );
+        if (match) {
+          const x = parseFloat(match[1]);
+          const y = parseFloat(match[2]);
+          const rotation = parseFloat(match[3]);
+          console.log(
+            `  Card ${index}: x=${x.toFixed(1)}, y=${y.toFixed(
+              1
+            )}, rot=${rotation.toFixed(1)}°`
+          );
+        }
+      }
+    });
+    console.log("---");
+  };
 
   const handleBringToFront = (imageIndex) => {
     setMaxZIndex((prev) => prev + 1);
   };
 
   const handleExpand = () => {
-    setIsExpanded(true);
-    setIsCollected(false);
-    setForceUpdate((prev) => prev + 1);
+    console.log(`🔄 EXPAND TRIGGERED - Cards will jump to grid positions`);
+    logAllCardPositions("BEFORE EXPAND");
+
+    // Directly animate all cards to grid positions
+    cardRefs.current.forEach((ref, index) => {
+      if (ref && ref.current) {
+        const gridPosition = getExpandedPosition(index);
+        ref.current.style.transition = "transform 500ms ease-out";
+        ref.current.style.transform = `translate(${gridPosition.x}px, ${gridPosition.y}px) rotate(0deg)`;
+      }
+    });
+
+    // Log positions after animation
+    setTimeout(() => logAllCardPositions("AFTER EXPAND"), 600);
   };
 
   const handleCollect = () => {
-    setIsCollected(true);
-    setIsExpanded(false);
-    setForceUpdate((prev) => prev + 1);
+    console.log(`🔄 COLLECT TRIGGERED - Cards will jump to center`);
+    logAllCardPositions("BEFORE COLLECT");
+
+    // Directly animate all cards to center positions
+    cardRefs.current.forEach((ref, index) => {
+      if (ref && ref.current) {
+        const centerPosition = getCollectedPosition(index);
+        const randomRotation = index * 2 - 4 + Math.random() * 8 - 4;
+        ref.current.style.transition = "transform 500ms ease-out";
+        ref.current.style.transform = `translate(${centerPosition.x}px, ${centerPosition.y}px) rotate(${randomRotation}deg)`;
+      }
+    });
+
+    // Log positions after animation
+    setTimeout(() => logAllCardPositions("AFTER COLLECT"), 600);
   };
 
   // Calculate grid positions for expanded state
   const getExpandedPosition = (index) => {
-    const cols = Math.ceil(Math.sqrt(stackImages.length));
+    const cols = Math.ceil(Math.sqrt(safeStackImages.length));
     const row = Math.floor(index / cols);
     const col = index % cols;
     return {
       x: col * 320 - cols * 160 + 160, // Center the grid
-      y: row * 420 - Math.ceil(stackImages.length / cols) * 210 + 210,
+      y: row * 420 - Math.ceil(safeStackImages.length / cols) * 210 + 210,
     };
   };
 
@@ -246,13 +374,14 @@ export default function DraggableStack({ stackImages = [] }) {
   };
 
   // If no images provided, show placeholder
-  if (!stackImages || stackImages.length === 0) {
+  if (!safeStackImages || safeStackImages.length === 0) {
     return null;
   }
 
   return (
-    <section className="pt-20 min-h-screen">
-      <div className="mb-8 space-x-2">
+    <section className="pt-20 min-h-screen overflow-x-hidden px-4">
+      <h4 className="mb-2 opacity-50 uppercase text-sm">stack</h4>
+      <div className="space-x-2">
         <button className="" onClick={handleExpand}>
           Expand
         </button>
@@ -262,18 +391,14 @@ export default function DraggableStack({ stackImages = [] }) {
       </div>
       <div className="relative w-full h-[89svh] flex flex-col items-center justify-center overflow-visible">
         <div className="relative w-full h-full flex items-center justify-center">
-          {stackImages.map((image, index) => (
+          {safeStackImages.map((image, index) => (
             <DraggableImage
-              key={`${image._key || index}-${forceUpdate}`}
+              key={`${image._key || index}`}
               image={image}
               index={index}
-              totalImages={stackImages.length}
+              totalImages={safeStackImages.length}
               onBringToFront={handleBringToFront}
-              isExpanded={isExpanded}
-              isCollected={isCollected}
-              expandedPosition={getExpandedPosition(index)}
-              collectedPosition={getCollectedPosition(index)}
-              forceUpdate={forceUpdate}
+              cardRefs={cardRefs}
             />
           ))}
         </div>
