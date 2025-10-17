@@ -20,6 +20,31 @@ export async function getWorkBySlug(slug) {
     credits[] {
       role,
       names
+    },
+    awards[]-> {
+      _id,
+      name,
+      slug,
+      organization,
+      year,
+      category,
+      status,
+      description,
+      url
+    },
+    info[]{
+      ...,
+      markDefs[]{
+        ...,
+        _type == "internalLink" => {
+          ...,
+          reference-> {
+            _id,
+            name,
+            slug
+          }
+        }
+      }
     }
   }`;
 

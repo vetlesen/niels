@@ -34,7 +34,7 @@ export default function Nav() {
         <p className={letterClasses}>d</p>
         <p className={letterClasses}>t</p>
       </Link>
-      <Link href={"/"}>About</Link>
+      <Link href={"/about"}>About</Link>
     </nav>
   );
 }

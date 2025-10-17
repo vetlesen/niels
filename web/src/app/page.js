@@ -104,13 +104,13 @@ export default function Home() {
         <div className="space-x-2 flex">
           <button
             onClick={() => setFilter("both")}
-            className="flex flex-row gap-2 items-baseline"
+            className="flex flex-row gap-2 items-baseline uppercase"
           >
             <div
               className={`w-3 h-3 flex ${
                 activeFilter === "both"
                   ? activeFilter === "narrative"
-                    ? "bg-white border border-white text-black"
+                    ? "bg-white border border-white  "
                     : "bg-black border border-black text-white"
                   : " border"
               }`}
@@ -119,12 +119,12 @@ export default function Home() {
           </button>
           <button
             onClick={() => setFilter("narrative")}
-            className="flex flex-row gap-2 items-baseline"
+            className="flex flex-row gap-2 items-baseline uppercase"
           >
             <div
               className={`w-3 h-3 flex ${
                 activeFilter === "narrative"
-                  ? "bg-white border border-white text-black"
+                  ? "bg-white border border-white  "
                   : " border"
               }`}
             />
@@ -132,13 +132,13 @@ export default function Home() {
           </button>
           <button
             onClick={() => setFilter("commercial")}
-            className="flex flex-row gap-2 items-baseline"
+            className="flex flex-row gap-2 items-baseline uppercase"
           >
             <div
               className={`w-3 h-3 flex ${
                 activeFilter === "commercial"
                   ? activeFilter === "narrative"
-                    ? "bg-white border border-white text-black"
+                    ? "bg-white border border-white  "
                     : "bg-black border border-black text-white"
                   : " border"
               }`}
@@ -166,13 +166,13 @@ export default function Home() {
                 onMouseEnter={() => setHoveredWork(item._id)}
                 onMouseLeave={() => setHoveredWork(null)}
               >
-                <div className="flex flex-row space-x-4">
+                <div className="flex flex-row space-x-2">
                   <h3
                     className={`transition-colors duration-500 ease-in-out ${
                       activeFilter === "narrative"
                         ? "text-white"
                         : activeFilter === "commercial"
-                        ? "text-black"
+                        ? " "
                         : "text-gray-900"
                     }`}
                   >
@@ -184,7 +184,7 @@ export default function Home() {
                         activeFilter === "narrative"
                           ? "text-white"
                           : activeFilter === "commercial"
-                          ? "text-black"
+                          ? " "
                           : "text-gray-900"
                       }`}
                     >
@@ -197,7 +197,7 @@ export default function Home() {
                         activeFilter === "narrative"
                           ? "text-white"
                           : activeFilter === "commercial"
-                          ? "text-black"
+                          ? " "
                           : "text-gray-900"
                       }`}
                     >
@@ -210,7 +210,7 @@ export default function Home() {
                         activeFilter === "narrative"
                           ? "text-white"
                           : activeFilter === "commercial"
-                          ? "text-black"
+                          ? " "
                           : "text-gray-900"
                       }`}
                     >
@@ -223,7 +223,7 @@ export default function Home() {
                         activeFilter === "narrative"
                           ? "text-white"
                           : activeFilter === "commercial"
-                          ? "text-black"
+                          ? " "
                           : "text-gray-900"
                       }`}
                     >
@@ -235,7 +235,7 @@ export default function Home() {
                       activeFilter === "narrative"
                         ? "text-white"
                         : activeFilter === "commercial"
-                        ? "text-black"
+                        ? " "
                         : "text-gray-900"
                     }`}
                   >

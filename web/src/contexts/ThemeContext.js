@@ -19,7 +19,7 @@ export function ThemeProvider({ children }) {
         "bg-[#1D1D1D] text-white transition-all duration-500 ease-in-out";
     } else if (activeFilter === "commercial") {
       document.body.className =
-        "bg-white text-black transition-all duration-500 ease-in-out";
+        "bg-white   transition-all duration-500 ease-in-out";
     } else {
       // Use a subtle gray for "both" to differentiate from commercial
       document.body.className =

@@ -2,6 +2,8 @@
 import { useState, useEffect, use } from "react";
 import { getWorkBySlug } from "../../../queries/getWorkBySlug";
 import MuxPlayer from "@mux/mux-player-react";
+import { PortableText } from "next-sanity";
+import Link from "next/link";
 
 export default function WorkDetail({ params }) {
   const resolvedParams = use(params);
@@ -60,29 +62,82 @@ export default function WorkDetail({ params }) {
         <div className="mb-8">
           <h1 className="">{work.name}</h1>
           <h2 className="">{work.title}</h2>
+          <p className="">{work.type}</p>
           <p className="">{work.year}</p>
         </div>
 
-        {/* Credits */}
-        {work.credits && work.credits.length > 0 && (
-          <div>
-            <h3 className="">Credits</h3>
-            <div className="space-y-4">
-              {work.credits.map((credit, index) => (
-                <ul key={index} className="flex gap-2 justify-between w-1/4">
-                  <li className="">{credit.role}</li>
-                  {credit.names && credit.names.length > 0 && (
-                    <ul className=" text-black">
-                      {credit.names.map((name, nameIndex) => (
-                        <li key={nameIndex}>{name}</li>
-                      ))}
-                    </ul>
-                  )}
-                </ul>
-              ))}
+        <div className="w-full grid grid-cols-1 md:grid-cols-2">
+          {/* Credits */}
+          {work.credits && work.credits.length > 0 && (
+            <div className="grid-span-1">
+              <h3 className="mb-2 opacity-50 uppercase text-sm">Credits</h3>
+              <div className="space-y-2">
+                {work.credits.map((credit, index) => (
+                  <ul key={index} className="grid grid-cols-2">
+                    <li className="">{credit.role}</li>
+                    {credit.names && credit.names.length > 0 && (
+                      <ul className=" ">
+                        {credit.names.map((name, nameIndex) => (
+                          <li key={nameIndex}>{name}</li>
+                        ))}
+                      </ul>
+                    )}
+                  </ul>
+                ))}
+              </div>
             </div>
+          )}
+          <div className="grid-span-1">
+            {work.awards && work.awards.length > 0 ? (
+              <div className="space-y-2 mb-6">
+                <h3 className="mb-2 opacity-50 uppercase text-sm">Awards</h3>
+                {work.awards.map((award, index) => (
+                  <div key={index} className=" ">
+                    {award.name} ({award.year})
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            {work.info && work.info.length > 0 && (
+              <div className=" ">
+                <h3 className="mb-2 opacity-50 uppercase text-sm">Info</h3>
+
+                <PortableText
+                  value={work.info}
+                  components={{
+                    marks: {
+                      link: ({ children, value }) => (
+                        <a
+                          href={value.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline"
+                        >
+                          {children}
+                        </a>
+                      ),
+                      internalLink: ({ children, value }) => {
+                        if (!value.reference?.slug?.current) {
+                          return (
+                            <span className="text-gray-500">{children}</span>
+                          );
+                        }
+                        return (
+                          <Link
+                            href={`/work/${value.reference.slug.current}`}
+                            className="underline"
+                          >
+                            {children}
+                          </Link>
+                        );
+                      },
+                    },
+                  }}
+                />
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     </main>
   );

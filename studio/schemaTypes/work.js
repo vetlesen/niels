@@ -59,6 +59,7 @@ export default {
         ],
         layout: "radio",
       },
+      validation: (Rule) => Rule.required(),
     },
     {
       name: "video",
@@ -124,6 +125,62 @@ export default {
               of: [{ type: "string" }],
             },
           ],
+        },
+      ],
+    },
+    {
+      name: "awards",
+      title: "Awards",
+      type: "array",
+      of: [
+        {
+          type: "reference",
+          to: [{ type: "awards" }],
+        },
+      ],
+      description: "Awards received for this work",
+    },
+    {
+      name: "info",
+      title: "Info",
+      type: "array",
+      of: [
+        {
+          type: "block",
+          marks: {
+            decorators: [],
+            annotations: [
+              {
+                name: "link",
+                type: "object",
+                title: "External Link",
+                fields: [
+                  {
+                    name: "href",
+                    type: "url",
+                    title: "URL",
+                    validation: (Rule) => Rule.required(),
+                  },
+                ],
+              },
+              {
+                name: "internalLink",
+                type: "object",
+                title: "Internal Link",
+                fields: [
+                  {
+                    name: "reference",
+                    type: "reference",
+                    title: "Reference",
+                    to: [{ type: "work" }],
+                    validation: (Rule) => Rule.required(),
+                  },
+                ],
+              },
+            ],
+          },
+          styles: [{ title: "Normal", value: "normal" }],
+          lists: [],
         },
       ],
     },
