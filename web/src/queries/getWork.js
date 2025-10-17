@@ -1,0 +1,28 @@
+import { client } from '../lib/client'
+
+export async function getWork() {
+  const query = `*[_type == "work"] | order(year desc) {
+    _id,
+    name,
+    title,
+    type,
+    year,
+    category,
+    video {
+      asset-> {
+        _id,
+        playbackId,
+        assetId,
+        status
+      }
+    }
+  }`
+  
+  try {
+    const work = await client.fetch(query)
+    return work
+  } catch (error) {
+    console.error('Error fetching work:', error)
+    return []
+  }
+}
