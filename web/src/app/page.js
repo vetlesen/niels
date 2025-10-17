@@ -13,16 +13,64 @@ function formatDuration(seconds) {
 }
 
 function VideoThumbnail({ playbackId, timestamp, isHovered, className }) {
-  const [key, setKey] = useState(0);
+  const playerRef = useRef(null);
+  const playPromiseRef = useRef(null);
 
-  // Force re-render when hover state changes to trigger autoplay
   useEffect(() => {
-    setKey((prev) => prev + 1);
-  }, [isHovered]);
+    const player = playerRef.current;
+    if (!player) return;
+
+    const handlePlayback = async () => {
+      try {
+        // Cancel any existing play promise
+        if (playPromiseRef.current) {
+          try {
+            await playPromiseRef.current;
+          } catch (error) {
+            // Ignore errors from cancelled promises
+          }
+          playPromiseRef.current = null;
+        }
+
+        if (isHovered) {
+          // Start playing
+          try {
+            playPromiseRef.current = player.play();
+            if (playPromiseRef.current) {
+              await playPromiseRef.current;
+            }
+          } catch (error) {
+            if (
+              error.name !== "AbortError" &&
+              error.name !== "NotAllowedError"
+            ) {
+              console.warn("Video play error:", error);
+            }
+          }
+        } else {
+          // Pause and reset
+          try {
+            player.pause();
+            player.currentTime = timestamp
+              .split(":")
+              .reduce((acc, time) => 60 * acc + +time);
+          } catch (error) {
+            console.warn("Video pause error:", error);
+          }
+        }
+      } catch (error) {
+        console.warn("Video playback error:", error);
+      }
+    };
+
+    // Small delay to ensure player is ready
+    const timeoutId = setTimeout(handlePlayback, 50);
+    return () => clearTimeout(timeoutId);
+  }, [isHovered, timestamp]);
 
   return (
     <MuxPlayer
-      key={key}
+      ref={playerRef}
       playbackId={playbackId}
       poster={`https://image.mux.com/${playbackId}/thumbnail.jpg?time=${timestamp
         .split(":")
@@ -30,7 +78,7 @@ function VideoThumbnail({ playbackId, timestamp, isHovered, className }) {
       muted
       loop
       playsInline
-      autoPlay={isHovered}
+      preload="metadata"
       startTime={timestamp.split(":").reduce((acc, time) => 60 * acc + +time)}
       endTime={timestamp.split(":").reduce((acc, time) => 60 * acc + +time) + 5}
       style={{ width: "120px", height: "68px" }}
