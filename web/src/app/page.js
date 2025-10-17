@@ -13,55 +13,16 @@ function formatDuration(seconds) {
 }
 
 function VideoThumbnail({ playbackId, timestamp, isHovered, className }) {
-  const playerRef = useRef(null);
-  const playPromiseRef = useRef(null);
+  const [key, setKey] = useState(0);
 
+  // Force re-render when hover state changes to trigger autoplay
   useEffect(() => {
-    if (playerRef.current) {
-      if (isHovered) {
-        // If there's a pending play promise, wait for it to resolve before playing
-        if (playPromiseRef.current) {
-          playPromiseRef.current
-            .then(() => {
-              if (playerRef.current && isHovered) {
-                playPromiseRef.current = playerRef.current.play();
-              }
-            })
-            .catch(() => {
-              // Ignore errors from interrupted play promises
-            });
-        } else {
-          playPromiseRef.current = playerRef.current.play();
-        }
-      } else {
-        // If there's a pending play promise, wait for it to resolve before pausing
-        if (playPromiseRef.current) {
-          playPromiseRef.current
-            .then(() => {
-              if (playerRef.current) {
-                playerRef.current.pause();
-                playerRef.current.currentTime = timestamp
-                  .split(":")
-                  .reduce((acc, time) => 60 * acc + +time);
-              }
-            })
-            .catch(() => {
-              // Ignore errors from interrupted play promises
-            });
-        } else {
-          playerRef.current.pause();
-          playerRef.current.currentTime = timestamp
-            .split(":")
-            .reduce((acc, time) => 60 * acc + +time);
-        }
-        playPromiseRef.current = null;
-      }
-    }
-  }, [isHovered, timestamp]);
+    setKey((prev) => prev + 1);
+  }, [isHovered]);
 
   return (
     <MuxPlayer
-      ref={playerRef}
+      key={key}
       playbackId={playbackId}
       poster={`https://image.mux.com/${playbackId}/thumbnail.jpg?time=${timestamp
         .split(":")
@@ -69,6 +30,7 @@ function VideoThumbnail({ playbackId, timestamp, isHovered, className }) {
       muted
       loop
       playsInline
+      autoPlay={isHovered}
       startTime={timestamp.split(":").reduce((acc, time) => 60 * acc + +time)}
       endTime={timestamp.split(":").reduce((acc, time) => 60 * acc + +time) + 5}
       style={{ width: "120px", height: "68px" }}
@@ -81,6 +43,7 @@ export default function Home() {
   const [work, setWork] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoveredWork, setHoveredWork] = useState(null);
+  const [hoveredThumbnail, setHoveredThumbnail] = useState(null);
   const { activeFilter, setFilter } = useTheme();
 
   useEffect(() => {
@@ -244,32 +207,37 @@ export default function Home() {
                 </div>
                 {item.video?.asset?.playbackId && item.thumbnails && (
                   <div className="flex gap-2 group-hover:bg-yellow p-2">
-                    {item.thumbnails.map((thumbnail, index) => (
-                      <div
-                        key={index}
-                        className="relative group-hover:bg-yellow "
-                      >
-                        {thumbnail.type === "image" ? (
-                          <img
-                            src={`https://image.mux.com/${
-                              item.video.asset.playbackId
-                            }/thumbnail.jpg?time=${thumbnail.timestamp
-                              .split(":")
-                              .reduce((acc, time) => 60 * acc + +time)}`}
-                            alt={`Thumbnail at ${thumbnail.timestamp}`}
-                            style={{ width: "120px", height: "68px" }}
-                            className="object-cover group-hover:mix-blend-difference "
-                          />
-                        ) : (
-                          <VideoThumbnail
-                            playbackId={item.video.asset.playbackId}
-                            timestamp={thumbnail.timestamp}
-                            isHovered={hoveredWork === item._id}
-                            className="group-hover:mix-blend-difference "
-                          />
-                        )}
-                      </div>
-                    ))}
+                    {item.thumbnails.map((thumbnail, index) => {
+                      const thumbnailId = `${item._id}-${index}`;
+                      return (
+                        <div
+                          key={index}
+                          className="relative group-hover:bg-yellow "
+                          onMouseEnter={() => setHoveredThumbnail(thumbnailId)}
+                          onMouseLeave={() => setHoveredThumbnail(null)}
+                        >
+                          {thumbnail.type === "image" ? (
+                            <img
+                              src={`https://image.mux.com/${
+                                item.video.asset.playbackId
+                              }/thumbnail.jpg?time=${thumbnail.timestamp
+                                .split(":")
+                                .reduce((acc, time) => 60 * acc + +time)}`}
+                              alt={`Thumbnail at ${thumbnail.timestamp}`}
+                              style={{ width: "120px", height: "68px" }}
+                              className="object-cover group-hover:mix-blend-difference "
+                            />
+                          ) : (
+                            <VideoThumbnail
+                              playbackId={item.video.asset.playbackId}
+                              timestamp={thumbnail.timestamp}
+                              isHovered={hoveredWork === item._id}
+                              className="group-hover:mix-blend-difference "
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </Link>
