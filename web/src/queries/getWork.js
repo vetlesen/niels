@@ -1,4 +1,4 @@
-import { client } from '../lib/client'
+import { client } from "../lib/client";
 
 export async function getWork() {
   const query = `*[_type == "work"] | order(year desc) {
@@ -15,14 +15,18 @@ export async function getWork() {
         assetId,
         status
       }
+    },
+    thumbnails[] {
+      timestamp,
+      type
     }
-  }`
-  
+  }`;
+
   try {
-    const work = await client.fetch(query)
-    return work
+    const work = await client.fetch(query);
+    return work;
   } catch (error) {
-    console.error('Error fetching work:', error)
-    return []
+    console.error("Error fetching work:", error);
+    return [];
   }
 }

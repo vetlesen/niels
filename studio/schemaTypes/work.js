@@ -1,3 +1,5 @@
+import ThumbnailsArrayInput from "../components/ThumbnailsArrayInput.jsx";
+
 export default {
   name: "work",
   title: "Work",
@@ -43,17 +45,25 @@ export default {
     {
       name: "thumbnails",
       title: "Thumbnails",
-      description:
-        "if nothing is added then this is done automaticly, add items to overrite it",
       type: "array",
+      components: {
+        input: ThumbnailsArrayInput,
+      },
       of: [
         {
           type: "object",
           fields: [
             {
-              name: "number",
-              title: "Number",
-              type: "number",
+              name: "timestamp",
+              title: "Timestamp (MM:SS)",
+              type: "string",
+              description:
+                "Enter time in format MM:SS (e.g., 01:30 for 1 minute 30 seconds)",
+              validation: (Rule) =>
+                Rule.regex(/^[0-9]{1,2}:[0-5][0-9]$/, {
+                  name: "timestamp",
+                  invert: false,
+                }).error("Please enter time in MM:SS format (e.g., 01:30)"),
             },
             {
               name: "type",
