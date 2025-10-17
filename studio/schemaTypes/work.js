@@ -184,5 +184,17 @@ export default {
         },
       ],
     },
+    {
+      name: "stack",
+      title: "Stack",
+      type: "array",
+      of: [
+        {
+          name: "image",
+          title: "image",
+          type: "image",
+        },
+      ],
+    },
   ],
 };

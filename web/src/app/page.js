@@ -12,7 +12,7 @@ function formatDuration(seconds) {
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
-function VideoThumbnail({ playbackId, timestamp, isHovered }) {
+function VideoThumbnail({ playbackId, timestamp, isHovered, className }) {
   const playerRef = useRef(null);
   const playPromiseRef = useRef(null);
 
@@ -72,7 +72,7 @@ function VideoThumbnail({ playbackId, timestamp, isHovered }) {
       startTime={timestamp.split(":").reduce((acc, time) => 60 * acc + +time)}
       endTime={timestamp.split(":").reduce((acc, time) => 60 * acc + +time) + 5}
       style={{ width: "120px", height: "68px" }}
-      className="thumbnail"
+      className={`thumbnail ${className || ""}`}
     />
   );
 }
@@ -149,7 +149,7 @@ export default function Home() {
       </section>
 
       {/* DISPLAY THE WORK HERE */}
-      <section className="px-4 pb-8">
+      <section className="px-2 pb-8">
         {loading ? (
           <p>Loading work...</p>
         ) : (
@@ -158,7 +158,7 @@ export default function Home() {
               <Link
                 key={item._id}
                 href={`/work/${item.slug?.current}`}
-                className={`flex flex-col gap-2 cursor-pointer p-2 rounded transition-all duration-500 ease-in-out hover:opacity-80 ${
+                className={`group flex flex-col cursor-pointer rounded  duration-500 ease-in-out hover:opacity-80 ${
                   activeFilter !== "both" && item.category !== activeFilter
                     ? "opacity-10 cursor-none pointer-events-none"
                     : ""
@@ -166,7 +166,7 @@ export default function Home() {
                 onMouseEnter={() => setHoveredWork(item._id)}
                 onMouseLeave={() => setHoveredWork(null)}
               >
-                <div className="flex flex-row space-x-2">
+                <div className="flex flex-row space-x-2 pt-2 px-2">
                   <h3
                     className={`transition-colors duration-500 ease-in-out ${
                       activeFilter === "narrative"
@@ -217,7 +217,7 @@ export default function Home() {
                       {item.year}
                     </p>
                   )}
-                  {item.category && (
+                  {/* {item.category && (
                     <p
                       className={`opacity-60 transition-colors duration-500 ease-in-out ${
                         activeFilter === "narrative"
@@ -229,7 +229,7 @@ export default function Home() {
                     >
                       {item.category}
                     </p>
-                  )}
+                  )} */}
                   <p
                     className={`opacity-60 transition-colors duration-500 ease-in-out ${
                       activeFilter === "narrative"
@@ -243,9 +243,12 @@ export default function Home() {
                   </p>
                 </div>
                 {item.video?.asset?.playbackId && item.thumbnails && (
-                  <div className="flex gap-2 over">
+                  <div className="flex gap-2 group-hover:bg-yellow p-2">
                     {item.thumbnails.map((thumbnail, index) => (
-                      <div key={index} className="relative">
+                      <div
+                        key={index}
+                        className="relative group-hover:bg-yellow "
+                      >
                         {thumbnail.type === "image" ? (
                           <img
                             src={`https://image.mux.com/${
@@ -255,13 +258,14 @@ export default function Home() {
                               .reduce((acc, time) => 60 * acc + +time)}`}
                             alt={`Thumbnail at ${thumbnail.timestamp}`}
                             style={{ width: "120px", height: "68px" }}
-                            className="object-cover"
+                            className="object-cover group-hover:mix-blend-difference "
                           />
                         ) : (
                           <VideoThumbnail
                             playbackId={item.video.asset.playbackId}
                             timestamp={thumbnail.timestamp}
                             isHovered={hoveredWork === item._id}
+                            className="group-hover:mix-blend-difference "
                           />
                         )}
                       </div>

@@ -45,6 +45,19 @@ export async function getWorkBySlug(slug) {
           }
         }
       }
+    },
+    stack[] {
+      _key,
+      asset-> {
+        _id,
+        url,
+        metadata {
+          dimensions {
+            width,
+            height
+          }
+        }
+      }
     }
   }`;
 

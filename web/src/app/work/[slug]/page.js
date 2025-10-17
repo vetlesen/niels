@@ -4,6 +4,7 @@ import { getWorkBySlug } from "../../../queries/getWorkBySlug";
 import MuxPlayer from "@mux/mux-player-react";
 import { PortableText } from "next-sanity";
 import Link from "next/link";
+import DraggableStack from "../../../components/DraggableStack";
 
 export default function WorkDetail({ params }) {
   const resolvedParams = use(params);
@@ -139,6 +140,7 @@ export default function WorkDetail({ params }) {
           </div>
         </div>
       </div>
+      <DraggableStack stackImages={work.stack} />
     </main>
   );
 }
