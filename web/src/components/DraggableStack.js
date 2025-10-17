@@ -179,7 +179,7 @@ function DraggableImage({
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
     >
-      <div className="bg-white border border-gray-300 shadow-lg">
+      <div className="drop-shadow-xl">
         {image?.asset?.url ? (
           <img
             src={image.asset.url}
