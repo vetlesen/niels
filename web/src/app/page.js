@@ -98,7 +98,13 @@ export default function Home() {
     async function fetchWork() {
       try {
         const workData = await getWork();
-        setWork(workData);
+        // Sort alphabetically by name
+        const sortedWork = workData.sort((a, b) => {
+          const nameA = (a.name || "").toLowerCase();
+          const nameB = (b.name || "").toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+        setWork(sortedWork);
         setLoading(false);
       } catch (error) {
         console.error("Error fetching work:", error);
@@ -113,7 +119,7 @@ export default function Home() {
     <main>
       <section className="h-[50svh] flex justify-start items-center px-4">
         <div className="space-x-2 flex sticky top-2">
-          <button
+          {/* <button
             onClick={() => setFilter("both")}
             className="flex flex-row gap-2 items-baseline uppercase"
           >
@@ -127,20 +133,7 @@ export default function Home() {
               }`}
             />
             Both
-          </button>
-          <button
-            onClick={() => setFilter("narrative")}
-            className="flex flex-row gap-2 items-baseline uppercase"
-          >
-            <div
-              className={`w-3 h-3 flex ${
-                activeFilter === "narrative"
-                  ? "bg-white border border-white  "
-                  : " border"
-              }`}
-            />
-            Narrative
-          </button>
+          </button> */}
           <button
             onClick={() => setFilter("commercial")}
             className="flex flex-row gap-2 items-baseline uppercase"
@@ -156,6 +149,19 @@ export default function Home() {
             />
             Commercial
           </button>
+          <button
+            onClick={() => setFilter("narrative")}
+            className="flex flex-row gap-2 items-baseline uppercase"
+          >
+            <div
+              className={`w-3 h-3 flex ${
+                activeFilter === "narrative"
+                  ? "bg-white border border-white  "
+                  : " border"
+              }`}
+            />
+            Narrative
+          </button>
         </div>
       </section>
 
@@ -169,15 +175,13 @@ export default function Home() {
               <Link
                 key={item._id}
                 href={`/work/${item.slug?.current}`}
-                className={`group flex flex-col cursor-pointer rounded  duration-500 ease-in-out hover:opacity-80 ${
-                  activeFilter !== "both" && item.category !== activeFilter
-                    ? "opacity-10 cursor-none pointer-events-none"
-                    : ""
+                className={`group flex flex-col cursor-pointer rounded duration-500 ease-in-out hover:opacity-80 ${
+                  item.category !== activeFilter ? "" : ""
                 }`}
                 onMouseEnter={() => setHoveredWork(item._id)}
                 onMouseLeave={() => setHoveredWork(null)}
               >
-                <div className="flex flex-row space-x-2 pt-2 px-2">
+                <div className={`flex flex-row space-x-2 pt-2 px-2 `}>
                   <h3
                     className={`transition-colors duration-500 ease-in-out ${
                       activeFilter === "narrative"
@@ -221,7 +225,7 @@ export default function Home() {
                         activeFilter === "narrative"
                           ? "text-white"
                           : activeFilter === "commercial"
-                          ? " "
+                          ? ""
                           : "text-gray-900"
                       }`}
                     >
@@ -246,7 +250,7 @@ export default function Home() {
                       activeFilter === "narrative"
                         ? "text-white"
                         : activeFilter === "commercial"
-                        ? " "
+                        ? ""
                         : "text-gray-900"
                     }`}
                   >
@@ -254,13 +258,19 @@ export default function Home() {
                   </p>
                 </div>
                 {item.video?.asset?.playbackId && item.thumbnails && (
-                  <div className="flex gap-2 group-hover:bg-yellow p-2">
+                  <div
+                    className={`flex gap-2 bg-black p-2 ${
+                      item.category !== activeFilter
+                        ? "bg-yellow group-hover:bg-black"
+                        : ""
+                    }`}
+                  >
                     {item.thumbnails.map((thumbnail, index) => {
                       const thumbnailId = `${item._id}-${index}`;
                       return (
                         <div
                           key={index}
-                          className="relative group-hover:bg-yellow "
+                          className="relative mix-blend-difference group-hover:mix-blend-normal"
                           onMouseEnter={() => setHoveredThumbnail(thumbnailId)}
                           onMouseLeave={() => setHoveredThumbnail(null)}
                         >
@@ -273,14 +283,14 @@ export default function Home() {
                                 .reduce((acc, time) => 60 * acc + +time)}`}
                               alt={`Thumbnail at ${thumbnail.timestamp}`}
                               style={{ width: "120px", height: "68px" }}
-                              className="object-cover group-hover:mix-blend-difference "
+                              className="object-cover"
                             />
                           ) : (
                             <VideoThumbnail
                               playbackId={item.video.asset.playbackId}
                               timestamp={thumbnail.timestamp}
                               isHovered={hoveredWork === item._id}
-                              className="group-hover:mix-blend-difference "
+                              className=""
                             />
                           )}
                         </div>

@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect } from "react";
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-  const [activeFilter, setActiveFilter] = useState("both");
+  const [activeFilter, setActiveFilter] = useState("commercial");
 
   useEffect(() => {
     // Apply theme classes to body using Tailwind
@@ -20,10 +20,6 @@ export function ThemeProvider({ children }) {
     } else if (activeFilter === "commercial") {
       document.body.className =
         "bg-white   transition-all duration-500 ease-in-out";
-    } else {
-      // Use a subtle gray for "both" to differentiate from commercial
-      document.body.className =
-        "bg-gray-50 text-gray-900 transition-all duration-500 ease-in-out";
     }
 
     // Force a reflow to ensure styles are applied
