@@ -21,12 +21,12 @@ export default async function WorkDetail({ params }) {
       <div className="pt-10">
         {/* Video */}
         {work.video?.asset?.playbackId && (
-          <div className="mb-8 px-4">
+          <div className="mb-8 px-4 grid-cols-12">
             <ClientMuxPlayer
               playbackId={work.video.asset.playbackId}
               aspectRatio="16:9"
               controls
-              style={{ width: "100%", maxWidth: "800px" }}
+              style={{ width: "100%" }}
             />
           </div>
         )}
@@ -112,7 +112,14 @@ export default async function WorkDetail({ params }) {
           </div>
         </div>
       </div>
-      <DraggableStack stackImages={work.stack} />
+      <DraggableStack
+        stackImages={work.stack}
+        imagePalettes={[
+          work.imagePalette0,
+          work.imagePalette1,
+          work.imagePalette2,
+        ]}
+      />
     </main>
   );
 }

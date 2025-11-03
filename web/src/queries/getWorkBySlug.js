@@ -55,10 +55,22 @@ export async function getWorkBySlug(slug) {
           dimensions {
             width,
             height
+          },
+          palette {
+            dominant,
+            vibrant,
+            lightVibrant,
+            darkVibrant,
+            muted,
+            lightMuted,
+            darkMuted
           }
         }
       }
-    }
+    },
+    "imagePalette0": stack[0].asset->metadata.palette,
+    "imagePalette1": stack[4].asset->metadata.palette,
+    "imagePalette2": stack[8].asset->metadata.palette
   }`;
 
   try {

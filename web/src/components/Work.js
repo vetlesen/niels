@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import MuxPlayer from "@mux/mux-player-react";
 import { useTheme } from "../contexts/ThemeContext";
+import Image from "next/image";
 
 function formatDuration(seconds) {
   if (!seconds) return "";
@@ -21,7 +22,6 @@ function VideoThumbnail({ playbackId, timestamp, isHovered, className }) {
 
     const handlePlayback = async () => {
       try {
-        // Cancel any existing play promise
         if (playPromiseRef.current) {
           try {
             await playPromiseRef.current;
@@ -32,7 +32,6 @@ function VideoThumbnail({ playbackId, timestamp, isHovered, className }) {
         }
 
         if (isHovered) {
-          // Start playing
           try {
             playPromiseRef.current = player.play();
             if (playPromiseRef.current) {
@@ -47,7 +46,6 @@ function VideoThumbnail({ playbackId, timestamp, isHovered, className }) {
             }
           }
         } else {
-          // Pause and reset
           try {
             player.pause();
             player.currentTime = timestamp
@@ -62,7 +60,6 @@ function VideoThumbnail({ playbackId, timestamp, isHovered, className }) {
       }
     };
 
-    // Small delay to ensure player is ready
     const timeoutId = setTimeout(handlePlayback, 50);
     return () => clearTimeout(timeoutId);
   }, [isHovered, timestamp]);
@@ -77,12 +74,101 @@ function VideoThumbnail({ playbackId, timestamp, isHovered, className }) {
       muted
       loop
       playsInline
-      preload="metadata"
+      preload="none"
       startTime={timestamp.split(":").reduce((acc, time) => 60 * acc + +time)}
       endTime={timestamp.split(":").reduce((acc, time) => 60 * acc + +time) + 5}
       style={{ width: "120px", height: "68px" }}
       className={`thumbnail ${className || ""}`}
     />
+  );
+}
+
+function ThumbnailWrapper({
+  thumbnail,
+  playbackId,
+  thumbnailId,
+  hoveredWork,
+  itemId,
+  activeFilter,
+  setHoveredThumbnail,
+  index,
+}) {
+  const [isVisible, setIsVisible] = useState(false);
+  const [shouldLoad, setShouldLoad] = useState(false);
+  const thumbnailRef = useRef(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      {
+        rootMargin: "100px",
+        threshold: 0.01,
+      }
+    );
+
+    if (thumbnailRef.current) {
+      observer.observe(thumbnailRef.current);
+    }
+
+    return () => {
+      if (thumbnailRef.current) {
+        observer.unobserve(thumbnailRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const staggerDelay = index * 40;
+    const timeout = setTimeout(() => {
+      setShouldLoad(true);
+    }, staggerDelay);
+
+    return () => clearTimeout(timeout);
+  }, [isVisible, index]);
+
+  return (
+    <div
+      ref={thumbnailRef}
+      className={`relative mix-blend-difference transition-all duration-300 ease-out ${
+        shouldLoad ? "opacity-100" : "opacity-0"
+      }`}
+      onMouseEnter={() => setHoveredThumbnail(thumbnailId)}
+      onMouseLeave={() => setHoveredThumbnail(null)}
+    >
+      {shouldLoad ? (
+        thumbnail.type === "image" ? (
+          <Image
+            src={`https://image.mux.com/${playbackId}/thumbnail.webp?width=240&time=${thumbnail.timestamp
+              .split(":")
+              .reduce((acc, time) => 60 * acc + +time)}`}
+            alt={`Thumbnail at ${thumbnail.timestamp}`}
+            width={120}
+            height={68}
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <VideoThumbnail
+            playbackId={playbackId}
+            timestamp={thumbnail.timestamp}
+            isHovered={hoveredWork === itemId}
+            className=""
+          />
+        )
+      ) : (
+        <div
+          className="bg-gray-800"
+          style={{ width: "120px", height: "68px" }}
+        />
+      )}
+    </div>
   );
 }
 
@@ -92,9 +178,11 @@ function WorkItem({
   onMouseLeave,
   hoveredWork,
   setHoveredThumbnail,
+  itemIndex,
 }) {
   const { activeFilter } = useTheme();
   const [isVisible, setIsVisible] = useState(false);
+  const [shouldRender, setShouldRender] = useState(false);
   const workRef = useRef(null);
 
   useEffect(() => {
@@ -106,7 +194,7 @@ function WorkItem({
         }
       },
       {
-        rootMargin: "0px", // Load when item is 100px away from viewport
+        rootMargin: "200px", // Start loading 200px before visible
         threshold: 0.2,
       }
     );
@@ -122,126 +210,150 @@ function WorkItem({
     };
   }, []);
 
+  // Stagger WorkItem rendering based on index
+  useEffect(() => {
+    if (!isVisible) return;
+
+    const staggerDelay = itemIndex * 100; // 80ms delay per work item
+    const timeout = setTimeout(() => {
+      setShouldRender(true);
+    }, staggerDelay);
+
+    return () => clearTimeout(timeout);
+  }, [isVisible, itemIndex]);
+
   const isHighlighted = item.category === activeFilter;
 
   return (
-    <Link
+    <div
       ref={workRef}
-      key={item._id}
-      href={`/work/${item.slug?.current}`}
-      className={`group flex flex-col rounded duration-500 ease-in-out ${
-        isHighlighted
-          ? "cursor-pointer opacity-100"
-          : "cursor-default opacity-100"
+      className={`transition-all duration-500 ease-out ${
+        shouldRender ? "opacity-100" : "opacity-0"
       }`}
-      onMouseEnter={() => onMouseEnter(item._id)}
-      onMouseLeave={() => onMouseLeave(null)}
     >
-      <div className={`flex flex-row space-x-2 pt-2 px-2 `}>
-        <h3
-          className={`transition-colors duration-500 ease-in-out ${
-            activeFilter === "narrative"
-              ? "text-white"
-              : activeFilter === "commercial"
-              ? ""
-              : "text-gray-900"
+      {shouldRender ? (
+        <Link
+          href={`/work/${item.slug?.current}`}
+          className={`group flex flex-col rounded duration-100 ease-in-out ${
+            isHighlighted
+              ? "cursor-pointer opacity-100"
+              : "cursor-default opacity-100"
           }`}
+          onMouseEnter={() => onMouseEnter(item._id)}
+          onMouseLeave={() => onMouseLeave(null)}
         >
-          {item.name}
-        </h3>
-        {item.title && (
-          <h4
-            className={`transition-colors duration-500 ease-in-out ${
-              activeFilter === "narrative"
-                ? "text-white"
-                : activeFilter === "commercial"
-                ? " "
-                : "text-gray-900"
-            }`}
+          <div className={`flex flex-row space-x-2 pt-2 px-2 `}>
+            <h3
+              className={`transition-colors duration-500 ease-in-out ${
+                activeFilter === "narrative"
+                  ? "text-white"
+                  : activeFilter === "commercial"
+                  ? ""
+                  : "text-gray-900"
+              }`}
+            >
+              {item.name}
+            </h3>
+            {item.title && (
+              <h4
+                className={`transition-colors duration-500 ease-in-out ${
+                  activeFilter === "narrative"
+                    ? "text-white"
+                    : activeFilter === "commercial"
+                    ? " "
+                    : "text-gray-900"
+                }`}
+              >
+                {item.title}
+              </h4>
+            )}
+            {item.type && (
+              <p
+                className={`opacity-60 transition-colors duration-500 ease-in-out ${
+                  activeFilter === "narrative"
+                    ? "text-white"
+                    : activeFilter === "commercial"
+                    ? " "
+                    : "text-gray-900"
+                }`}
+              >
+                {item.type}
+              </p>
+            )}
+            {item.year && (
+              <p
+                className={`opacity-60 transition-colors duration-500 ease-in-out ${
+                  activeFilter === "narrative"
+                    ? "text-white"
+                    : activeFilter === "commercial"
+                    ? ""
+                    : "text-gray-900"
+                }`}
+              >
+                {item.year}
+              </p>
+            )}
+            <p
+              className={`opacity-60 transition-colors duration-500 ease-in-out ${
+                activeFilter === "narrative"
+                  ? "text-white"
+                  : activeFilter === "commercial"
+                  ? ""
+                  : "text-gray-900"
+              }`}
+            >
+              {formatDuration(item.video?.asset?.data?.duration)}
+            </p>
+          </div>
+          {item.video?.asset?.playbackId && item.thumbnails && (
+            <div
+              className={`flex gap-2 bg-black p-2 overflow-hidden ${
+                item.category !== activeFilter ? "bg-yellow" : ""
+              }`}
+              style={{ minHeight: "84px" }}
+            >
+              {item.thumbnails.map((thumbnail, index) => {
+                const thumbnailId = `${item._id}-${index}`;
+
+                return (
+                  <ThumbnailWrapper
+                    key={index}
+                    thumbnail={thumbnail}
+                    playbackId={item.video.asset.playbackId}
+                    thumbnailId={thumbnailId}
+                    hoveredWork={hoveredWork}
+                    itemId={item._id}
+                    activeFilter={activeFilter}
+                    setHoveredThumbnail={setHoveredThumbnail}
+                    index={index}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </Link>
+      ) : (
+        // Placeholder skeleton for WorkItem
+        <div className="flex flex-col">
+          <div className="flex flex-row space-x-2 pt-2 px-2">
+            <div className="h-6 w-32 bg-gray-800 rounded animate-pulse" />
+            <div className="h-6 w-24 bg-gray-800 rounded animate-pulse" />
+          </div>
+          <div
+            className="flex gap-2 bg-black p-2"
+            style={{ minHeight: "84px" }}
           >
-            {item.title}
-          </h4>
-        )}
-        {item.type && (
-          <p
-            className={`opacity-60 transition-colors duration-500 ease-in-out ${
-              activeFilter === "narrative"
-                ? "text-white"
-                : activeFilter === "commercial"
-                ? " "
-                : "text-gray-900"
-            }`}
-          >
-            {item.type}
-          </p>
-        )}
-        {item.year && (
-          <p
-            className={`opacity-60 transition-colors duration-500 ease-in-out ${
-              activeFilter === "narrative"
-                ? "text-white"
-                : activeFilter === "commercial"
-                ? ""
-                : "text-gray-900"
-            }`}
-          >
-            {item.year}
-          </p>
-        )}
-        <p
-          className={`opacity-60 transition-colors duration-500 ease-in-out ${
-            activeFilter === "narrative"
-              ? "text-white"
-              : activeFilter === "commercial"
-              ? ""
-              : "text-gray-900"
-          }`}
-        >
-          {formatDuration(item.video?.asset?.data?.duration)}
-        </p>
-      </div>
-      {item.video?.asset?.playbackId && item.thumbnails && (
-        <div
-          className={`flex gap-2 bg-black p-2 ${
-            item.category !== activeFilter ? "bg-yellow" : ""
-          }`}
-        >
-          {item.thumbnails.map((thumbnail, index) => {
-            const thumbnailId = `${item._id}-${index}`;
-            return (
+            {Array.from({ length: 12 }).map((_, index) => (
               <div
                 key={index}
-                className="relative mix-blend-difference "
-                onMouseEnter={() => setHoveredThumbnail(thumbnailId)}
-                onMouseLeave={() => setHoveredThumbnail(null)}
-              >
-                {thumbnail.type === "image" ? (
-                  <img
-                    src={`https://image.mux.com/${
-                      item.video.asset.playbackId
-                    }/thumbnail.jpg?time=${thumbnail.timestamp
-                      .split(":")
-                      .reduce((acc, time) => 60 * acc + +time)}`}
-                    alt={`Thumbnail at ${thumbnail.timestamp}`}
-                    style={{ width: "120px", height: "68px" }}
-                    className="object-cover"
-                  />
-                ) : (
-                  <VideoThumbnail
-                    playbackId={item.video.asset.playbackId}
-                    timestamp={thumbnail.timestamp}
-                    isHovered={
-                      hoveredWork === item._id && item.category === activeFilter
-                    }
-                    className=""
-                  />
-                )}
-              </div>
-            );
-          })}
+                className="bg-gray-800 animate-pulse"
+                style={{ width: "120px", height: "68px" }}
+              />
+            ))}
+          </div>
         </div>
       )}
-    </Link>
+    </div>
   );
 }
 
@@ -250,17 +362,17 @@ export default function Work({ work }) {
   const [hoveredThumbnail, setHoveredThumbnail] = useState(null);
   const { activeFilter } = useTheme();
 
-  // Show all work items, but we'll highlight the ones matching the active filter
   const filteredWork = work;
 
   return (
     <section className="px-2 pb-8">
       {filteredWork.length > 0 ? (
         <>
-          {filteredWork.map((item) => (
+          {filteredWork.map((item, index) => (
             <WorkItem
               key={item._id}
               item={item}
+              itemIndex={index}
               onMouseEnter={setHoveredWork}
               onMouseLeave={setHoveredWork}
               hoveredWork={hoveredWork}

@@ -5,33 +5,58 @@ const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
   const [activeFilter, setActiveFilter] = useState("commercial");
+  const [customColor, setCustomColor] = useState(null);
 
   useEffect(() => {
     // Apply theme classes to body using Tailwind
-    // Clear existing classes first
     document.body.className = "";
 
-    // Add font family back since we removed it from CSS
-    document.body.style.fontFamily = "Arial, Helvetica, sans-serif";
+    if (customColor) {
+      // Use custom color from image palette
+      document.body.style.backgroundColor = customColor;
+      document.body.className = "transition-all duration-500 ease-in-out";
 
-    if (activeFilter === "narrative") {
+      // Determine text color based on background brightness
+      const textColor = isColorDark(customColor) ? "white" : "black";
+      document.body.style.color = textColor;
+    } else if (activeFilter === "narrative") {
+      document.body.style.backgroundColor = "";
+      document.body.style.color = "";
       document.body.className =
-        "bg-[#404040] text-white transition-all duration-500 ease-in-out";
+        "bg-[#383838] text-white transition-all duration-500 ease-in-out";
     } else if (activeFilter === "commercial") {
+      document.body.style.backgroundColor = "";
+      document.body.style.color = "";
       document.body.className =
-        "bg-white   transition-all duration-500 ease-in-out";
+        "bg-white transition-all duration-500 ease-in-out";
     }
 
-    // Force a reflow to ensure styles are applied
     document.body.offsetHeight;
-  }, [activeFilter]);
+  }, [activeFilter, customColor]);
+
+  // Helper function to determine if a color is dark
+  const isColorDark = (hexColor) => {
+    const hex = hexColor.replace("#", "");
+    const r = parseInt(hex.substr(0, 2), 16);
+    const g = parseInt(hex.substr(2, 2), 16);
+    const b = parseInt(hex.substr(4, 2), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return brightness < 128;
+  };
 
   const setFilter = (category) => {
     setActiveFilter(category);
+    setCustomColor(null); // Reset custom color when changing filter
+  };
+
+  const setBackgroundColor = (color) => {
+    setCustomColor(color);
   };
 
   return (
-    <ThemeContext.Provider value={{ activeFilter, setFilter }}>
+    <ThemeContext.Provider
+      value={{ activeFilter, setFilter, setBackgroundColor, customColor }}
+    >
       {children}
     </ThemeContext.Provider>
   );
