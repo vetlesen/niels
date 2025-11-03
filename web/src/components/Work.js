@@ -106,8 +106,8 @@ function ThumbnailWrapper({
         }
       },
       {
-        rootMargin: "100px",
-        threshold: 0.01,
+        rootMargin: "150px",
+        threshold: 0.1,
       }
     );
 
@@ -136,9 +136,10 @@ function ThumbnailWrapper({
   return (
     <div
       ref={thumbnailRef}
-      className={`relative mix-blend-difference transition-all duration-300 ease-out ${
+      className={`relative mix-blend-difference transition-all duration-300 ease-out flex-shrink-0 ${
         shouldLoad ? "opacity-100" : "opacity-0"
       }`}
+      style={{ width: "120px", height: "68px" }}
       onMouseEnter={() => setHoveredThumbnail(thumbnailId)}
       onMouseLeave={() => setHoveredThumbnail(null)}
     >
@@ -153,6 +154,8 @@ function ThumbnailWrapper({
             height={68}
             loading="lazy"
             decoding="async"
+            className="object-cover"
+            style={{ width: "120px", height: "68px" }}
           />
         ) : (
           <VideoThumbnail
@@ -194,8 +197,8 @@ function WorkItem({
         }
       },
       {
-        rootMargin: "200px", // Start loading 200px before visible
-        threshold: 0.2,
+        rootMargin: "150px",
+        threshold: 0.1,
       }
     );
 
@@ -340,13 +343,13 @@ function WorkItem({
             <div className="h-6 w-24 bg-gray-800 rounded animate-pulse" />
           </div>
           <div
-            className="flex gap-2 bg-black p-2"
+            className="flex gap-2 bg-black p-2 overflow-x-auto"
             style={{ minHeight: "84px" }}
           >
             {Array.from({ length: 12 }).map((_, index) => (
               <div
                 key={index}
-                className="bg-gray-800 animate-pulse"
+                className="bg-gray-800 animate-pulse flex-shrink-0"
                 style={{ width: "120px", height: "68px" }}
               />
             ))}

@@ -21,11 +21,12 @@ export default async function WorkDetail({ params }) {
       <div className="pt-10">
         {/* Video */}
         {work.video?.asset?.playbackId && (
-          <div className="mb-8 px-4 grid-cols-12">
+          <div className="mb-8 px-4 grid grid-cols-12">
             <ClientMuxPlayer
               playbackId={work.video.asset.playbackId}
               aspectRatio="16:9"
               controls
+              className="col-span-12"
               style={{ width: "100%" }}
             />
           </div>

@@ -99,7 +99,7 @@ export default function ClientMuxPlayer({
           style={{
             width: "100%",
             opacity: isLoaded ? 1 : 0,
-            transition: "opacity 0.3s ease-in-out",
+            transition: "opacity 0.5s ease-in-out",
           }}
           {...props}
         />
