@@ -16,7 +16,7 @@ export function ThemeProvider({ children }) {
 
     if (activeFilter === "narrative") {
       document.body.className =
-        "bg-[#1D1D1D] text-white transition-all duration-500 ease-in-out";
+        "bg-[#404040] text-white transition-all duration-500 ease-in-out";
     } else if (activeFilter === "commercial") {
       document.body.className =
         "bg-white   transition-all duration-500 ease-in-out";

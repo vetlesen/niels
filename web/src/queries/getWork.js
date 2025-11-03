@@ -1,7 +1,7 @@
 import { client } from "../lib/client";
 
 export async function getWork() {
-  const query = `*[_type == "work"] | order(year desc) {
+  const query = `*[_type == "work"] | order(orderRank) {
     _id,
     name,
     slug,

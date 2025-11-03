@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+@font-face {
+  font-family: "monument";
+  src: url("/font/ABCMonumentGrotesk-Medium-Trial.woff2") format("woff2"),
+    url("/font/ABCMonumentGrotesk-Medium-Trial.woff") format("woff");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -11,7 +20,7 @@
   --color-foreground: var(--foreground);
   --color-yellow: var(--yellow);
 
-  --font-sans: var(--font-geist-sans);
+  --font-sans: "ABC Monument Grotesk", Arial, Helvetica, sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
@@ -23,7 +32,11 @@
 }
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "monument", Arial, Helvetica, sans-serif;
+}
+
+* {
+  font-family: "monument", Arial, Helvetica, sans-serif;
 }
 
 .thumbnail {

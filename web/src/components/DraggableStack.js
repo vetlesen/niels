@@ -1,5 +1,12 @@
 "use client";
+
 import { useState, useEffect, useRef } from "react";
+
+// Deterministic pseudo-random function based on seed
+function seededRandom(seed) {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
 
 // Individual draggable image component
 function DraggableImage({
@@ -19,16 +26,27 @@ function DraggableImage({
   }, [index, cardRefs]);
 
   const [isDragging, setIsDragging] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
+
+  // Use deterministic positioning based on index to avoid hydration issues
   const [position, setPosition] = useState({
-    x: index * 5 + Math.random() * 20 - 10,
-    y: index * 5 + Math.random() * 20 - 10,
+    x: index * 5,
+    y: index * 5,
   });
-  const [rotation, setRotation] = useState(
-    index * 2 - 4 + Math.random() * 8 - 4
-  );
+  const [rotation, setRotation] = useState(index * 2 - 4);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
   const [zIndex, setZIndex] = useState(totalImages - index);
+
+  // Apply random positioning only after hydration
+  useEffect(() => {
+    setPosition({
+      x: index * 5 + seededRandom(index * 123) * 20 - 10,
+      y: index * 5 + seededRandom(index * 456) * 20 - 10,
+    });
+    setRotation(index * 2 - 4 + seededRandom(index * 789) * 8 - 4);
+    setIsHydrated(true);
+  }, [index]);
 
   const handleMouseDown = (e) => {
     e.preventDefault();
@@ -344,7 +362,8 @@ export default function DraggableStack({ stackImages = [] }) {
     cardRefs.current.forEach((ref, index) => {
       if (ref && ref.current) {
         const centerPosition = getCollectedPosition(index);
-        const randomRotation = index * 2 - 4 + Math.random() * 8 - 4;
+        const randomRotation =
+          index * 2 - 4 + seededRandom(index * 789) * 8 - 4;
         ref.current.style.transition = "transform 500ms ease-out";
         ref.current.style.transform = `translate(${centerPosition.x}px, ${centerPosition.y}px) rotate(${randomRotation}deg)`;
       }
@@ -368,8 +387,8 @@ export default function DraggableStack({ stackImages = [] }) {
   // Calculate collected position (center)
   const getCollectedPosition = (index) => {
     return {
-      x: index * 3 + Math.random() * 10 - 5,
-      y: index * 3 + Math.random() * 10 - 5,
+      x: index * 3 + seededRandom(index * 321) * 10 - 5,
+      y: index * 3 + seededRandom(index * 654) * 10 - 5,
     };
   };
 

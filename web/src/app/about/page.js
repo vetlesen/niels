@@ -55,7 +55,7 @@ export default function About() {
                       className="mb-4 block hover:opacity-70"
                     >
                       <div className="mb-2">
-                        <span className="text-black">{workNames}</span>
+                        <span className="text-">{workNames}</span>
                         <span className="font-medium ml-2">
                           {award.name} ({award.year})
                         </span>

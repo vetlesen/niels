@@ -1,40 +1,12 @@
-"use client";
-import { useState, useEffect, use } from "react";
 import { getWorkBySlug } from "../../../queries/getWorkBySlug";
-import MuxPlayer from "@mux/mux-player-react";
+import ClientMuxPlayer from "../../../components/ClientMuxPlayer";
 import { PortableText } from "next-sanity";
 import Link from "next/link";
 import DraggableStack from "../../../components/DraggableStack";
 
-export default function WorkDetail({ params }) {
-  const resolvedParams = use(params);
-  const [work, setWork] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchWork() {
-      try {
-        const workData = await getWorkBySlug(resolvedParams.slug);
-        setWork(workData);
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching work:", error);
-        setLoading(false);
-      }
-    }
-
-    if (resolvedParams.slug) {
-      fetchWork();
-    }
-  }, [resolvedParams.slug]);
-
-  if (loading) {
-    return (
-      <main className="px-4 py-8">
-        <p>Loading...</p>
-      </main>
-    );
-  }
+export default async function WorkDetail({ params }) {
+  const { slug } = await params;
+  const work = await getWorkBySlug(slug);
 
   if (!work) {
     return (
@@ -50,11 +22,11 @@ export default function WorkDetail({ params }) {
         {/* Video */}
         {work.video?.asset?.playbackId && (
           <div className="mb-8 px-4">
-            <MuxPlayer
+            <ClientMuxPlayer
               playbackId={work.video.asset.playbackId}
+              aspectRatio="16:9"
               controls
               style={{ width: "100%", maxWidth: "800px" }}
-              className="rounded"
             />
           </div>
         )}
