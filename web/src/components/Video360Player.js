@@ -47,70 +47,77 @@ function VideoSphere({ videoUrl, videoRef, isHLS }) {
         if (videoUrl.includes(".m3u8") || isHLS) {
           console.log("Loading HLS stream from Mux...");
 
-          // IMPORTANT: Check for native HLS support FIRST (Safari/iOS)
-          // Native HLS is more reliable on mobile Safari than HLS.js
-          if (video.canPlayType("application/vnd.apple.mpegurl")) {
-            console.log("Using native HLS support (Safari/iOS)");
+          // Use HLS.js for better quality control
+          const Hls = (await import("hls.js")).default;
+
+          if (Hls.isSupported()) {
+            console.log("Using HLS.js for quality control");
+            hls = new Hls({
+              enableWorker: true,
+              lowLatencyMode: false,
+              // Balanced buffering
+              maxBufferLength: 30,
+              maxMaxBufferLength: 60,
+              maxBufferSize: 60 * 1000 * 1000,
+              maxBufferHole: 0.5,
+              // Let HLS.js auto-select starting quality, but allow it to go higher
+              startLevel: -1, // Auto-select based on bandwidth
+              capLevelToPlayerSize: false, // Don't limit quality by player size
+              // Moderate bandwidth assumptions
+              abrEwmaDefaultEstimate: 2000000, // 2 Mbps default (more realistic)
+              abrBandWidthFactor: 0.95,
+              abrBandWidthUpFactor: 0.7,
+            });
+
+            hls.loadSource(videoUrl);
+            hls.attachMedia(video);
+
+            hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+              console.log("✓ HLS manifest loaded");
+              console.log(`Available quality levels: ${data.levels.length}`);
+
+              // Log available qualities
+              data.levels.forEach((level, index) => {
+                console.log(
+                  `Level ${index}: ${level.width}x${
+                    level.height
+                  } @ ${Math.round(level.bitrate / 1000)}kbps`
+                );
+              });
+            });
+
+            hls.on(Hls.Events.ERROR, (event, data) => {
+              // Only log non-fatal errors as warnings
+              if (!data.fatal) {
+                console.warn("HLS warning:", data.details);
+                return;
+              }
+
+              console.error("HLS fatal error:", data);
+              switch (data.type) {
+                case Hls.ErrorTypes.NETWORK_ERROR:
+                  console.error("Fatal network error, trying to recover...");
+                  hls.startLoad();
+                  break;
+                case Hls.ErrorTypes.MEDIA_ERROR:
+                  console.error("Fatal media error, trying to recover...");
+                  hls.recoverMediaError();
+                  break;
+                default:
+                  console.error("Fatal error, cannot recover");
+                  setError("Failed to load video stream");
+                  break;
+              }
+            });
+          } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+            // Fallback to native HLS if HLS.js not supported
+            console.log("Using native HLS support (fallback)");
             video.src = videoUrl;
-            video.load(); // Explicitly load the video
+            video.load();
           } else {
-            // Fallback to HLS.js for browsers without native HLS support
-            const Hls = (await import("hls.js")).default;
-
-            if (Hls.isSupported()) {
-              console.log("Using HLS.js");
-              hls = new Hls({
-                enableWorker: true,
-                lowLatencyMode: false,
-                backBufferLength: 90,
-                // Mobile-specific optimizations
-                maxBufferLength: 30,
-                maxMaxBufferLength: 60,
-                maxBufferSize: 60 * 1000 * 1000,
-                maxBufferHole: 0.5,
-                // Additional mobile optimizations
-                startLevel: -1, // Auto quality selection
-                capLevelToPlayerSize: true,
-                maxLoadingDelay: 4,
-                minAutoBitrate: 0,
-                // Prevent stalling
-                liveSyncDurationCount: 3,
-                liveMaxLatencyDurationCount: 10,
-              });
-
-              hls.loadSource(videoUrl);
-              hls.attachMedia(video);
-
-              hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                console.log("✓ HLS manifest loaded");
-              });
-
-              hls.on(Hls.Events.ERROR, (event, data) => {
-                console.error("HLS error:", data);
-                if (data.fatal) {
-                  switch (data.type) {
-                    case Hls.ErrorTypes.NETWORK_ERROR:
-                      console.error(
-                        "Fatal network error, trying to recover..."
-                      );
-                      hls.startLoad();
-                      break;
-                    case Hls.ErrorTypes.MEDIA_ERROR:
-                      console.error("Fatal media error, trying to recover...");
-                      hls.recoverMediaError();
-                      break;
-                    default:
-                      console.error("Fatal error, cannot recover");
-                      setError("Failed to load video stream");
-                      break;
-                  }
-                }
-              });
-            } else {
-              console.error("HLS is not supported in this browser");
-              setError("HLS not supported");
-              return;
-            }
+            console.error("HLS is not supported in this browser");
+            setError("HLS not supported");
+            return;
           }
         } else {
           // Regular video file (MP4, WebM, etc.)
@@ -174,20 +181,23 @@ export default function Video360Player({ videoUrl, isHLS = false }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Wait for video to be ready and autoplay
+    // Wait for video to be ready
     const checkVideo = setInterval(() => {
       if (videoRef.current && videoRef.current.readyState >= 2) {
         setIsLoading(false);
         clearInterval(checkVideo);
 
-        // Autoplay the video
+        // Try to autoplay, but don't worry if it fails on mobile
+        // User can click the play button
         videoRef.current
           .play()
           .then(() => {
             setIsPlaying(true);
           })
           .catch((error) => {
-            console.error("Autoplay failed:", error);
+            // Autoplay blocked - this is expected on mobile
+            console.log("Autoplay blocked, user must interact to play");
+            setIsPlaying(false);
           });
       }
     }, 100);

@@ -7,6 +7,43 @@ import { PortableText } from "@portabletext/react";
 // comps
 import Video360Player from "@/components/Video360Player";
 
+export async function generateMetadata() {
+  const settings = await getSettings();
+
+  const title = "About – Niels Windfeldt";
+  const description = settings?.bio;
+
+  const metadata = {
+    title,
+    description,
+  };
+
+  // Add Open Graph image if available
+  if (settings?.ogImage?.asset?.url) {
+    metadata.openGraph = {
+      title,
+      description,
+      images: [
+        {
+          url: settings.ogImage.asset.url,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    };
+
+    metadata.twitter = {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [settings.ogImage.asset.url],
+    };
+  }
+
+  return metadata;
+}
+
 export default async function About() {
   const settings = await getSettings();
   const awards = await getAwards();
