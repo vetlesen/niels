@@ -4,6 +4,52 @@ import { PortableText } from "next-sanity";
 import Link from "next/link";
 import DraggableStack from "../../../components/DraggableStack";
 
+export async function generateMetadata({ params }) {
+  const { slug } = await params;
+  const work = await getWorkBySlug(slug);
+
+  if (!work) {
+    return {
+      title: "Work Not Found",
+    };
+  }
+
+  const title = work.title;
+  const description = work.type;
+
+  const metadata = {
+    title,
+    description,
+  };
+
+  // Add Open Graph image if video thumbnail is available
+  if (work.video?.asset?.playbackId) {
+    const thumbnailUrl = `https://image.mux.com/${work.video.asset.playbackId}/thumbnail.jpg?width=1200&height=630&fit_mode=smartcrop`;
+
+    metadata.openGraph = {
+      title,
+      description,
+      images: [
+        {
+          url: thumbnailUrl,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    };
+
+    metadata.twitter = {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [thumbnailUrl],
+    };
+  }
+
+  return metadata;
+}
+
 export default async function WorkDetail({ params }) {
   const { slug } = await params;
   const work = await getWorkBySlug(slug);
