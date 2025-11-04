@@ -16,7 +16,8 @@ export async function getWork() {
         assetId,
         status,
         data {
-          duration
+          duration,
+          aspect_ratio
         }
       }
     },

@@ -1,12 +1,39 @@
 "use client";
 import { useTheme } from "../contexts/ThemeContext";
+import { useState, useEffect } from "react";
 
 export default function Filter() {
   const { activeFilter, setFilter } = useTheme();
+  const [isFixed, setIsFixed] = useState(false);
+  const [lastScrollY, setLastScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      // Scrolling down and past a threshold
+      if (currentScrollY > lastScrollY && currentScrollY > 400) {
+        setIsFixed(true);
+      }
+      // Scrolling up and back above threshold
+      else if (currentScrollY < 400) {
+        setIsFixed(false);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
 
   return (
     <section className="h-[50svh] flex justify-start items-center px-4">
-      <div className="space-x-2 flex sticky top-2">
+      <div
+        className={`space-x-2 flex top-2 transition-all duration-300  z-9999 ${
+          isFixed ? "fixed" : "sticky"
+        }`}
+      >
         <button
           onClick={() => setFilter("commercial")}
           className="flex flex-row gap-2 items-baseline uppercase"

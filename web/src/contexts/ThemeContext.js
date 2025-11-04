@@ -1,11 +1,36 @@
 "use client";
 import { createContext, useContext, useState, useEffect } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
-  const [activeFilter, setActiveFilter] = useState("commercial");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  // Initialize from URL or default to "commercial"
+  const [activeFilter, setActiveFilter] = useState(() => {
+    if (typeof window !== "undefined") {
+      const urlFilter = searchParams.get("filter");
+      return urlFilter === "narrative" ? "narrative" : "commercial";
+    }
+    return "commercial";
+  });
   const [customColor, setCustomColor] = useState(null);
+
+  // Sync with URL on mount and when searchParams change
+  useEffect(() => {
+    const urlFilter = searchParams.get("filter");
+    if (urlFilter === "narrative" || urlFilter === "commercial") {
+      setActiveFilter(urlFilter);
+    } else if (!urlFilter) {
+      // If no filter in URL, set default to commercial
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("filter", "commercial");
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    }
+  }, [searchParams, pathname, router]);
 
   useEffect(() => {
     // Apply theme classes to body using Tailwind
@@ -47,6 +72,11 @@ export function ThemeProvider({ children }) {
   const setFilter = (category) => {
     setActiveFilter(category);
     setCustomColor(null); // Reset custom color when changing filter
+
+    // Update URL with new filter
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("filter", category);
+    router.push(`${pathname}?${params.toString()}`, { scroll: false });
   };
 
   const setBackgroundColor = (color) => {

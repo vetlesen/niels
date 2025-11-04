@@ -12,7 +12,13 @@ function formatDuration(seconds) {
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
 }
 
-function VideoThumbnail({ playbackId, timestamp, isHovered, className }) {
+function VideoThumbnail({
+  playbackId,
+  timestamp,
+  isHovered,
+  className,
+  style,
+}) {
   const playerRef = useRef(null);
   const playPromiseRef = useRef(null);
 
@@ -77,8 +83,8 @@ function VideoThumbnail({ playbackId, timestamp, isHovered, className }) {
       preload="none"
       startTime={timestamp.split(":").reduce((acc, time) => 60 * acc + +time)}
       endTime={timestamp.split(":").reduce((acc, time) => 60 * acc + +time) + 5}
-      style={{ width: "120px", height: "68px" }}
       className={`thumbnail ${className || ""}`}
+      style={style}
     />
   );
 }
@@ -90,12 +96,17 @@ function ThumbnailWrapper({
   hoveredWork,
   itemId,
   activeFilter,
+  itemCategory,
   setHoveredThumbnail,
   index,
+  aspectRatio,
 }) {
   const [isVisible, setIsVisible] = useState(false);
   const [shouldLoad, setShouldLoad] = useState(false);
   const thumbnailRef = useRef(null);
+
+  // Convert aspect ratio from "16:9" format to "16/9" CSS format
+  const cssAspectRatio = aspectRatio ? aspectRatio.replace(":", "/") : "16/9";
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -107,7 +118,7 @@ function ThumbnailWrapper({
       },
       {
         rootMargin: "150px",
-        threshold: 0.1,
+        threshold: 0.05,
       }
     );
 
@@ -136,39 +147,40 @@ function ThumbnailWrapper({
   return (
     <div
       ref={thumbnailRef}
-      className={`relative mix-blend-difference transition-all duration-300 ease-out flex-shrink-0 ${
+      className={`mix-blend-difference transition-all duration-300 ease-out flex-shrink-0 ${
         shouldLoad ? "opacity-100" : "opacity-0"
       }`}
-      style={{ width: "120px", height: "68px" }}
       onMouseEnter={() => setHoveredThumbnail(thumbnailId)}
       onMouseLeave={() => setHoveredThumbnail(null)}
     >
       {shouldLoad ? (
         thumbnail.type === "image" ? (
           <Image
-            src={`https://image.mux.com/${playbackId}/thumbnail.webp?width=240&time=${thumbnail.timestamp
+            src={`https://image.mux.com/${playbackId}/thumbnail.webp?width=480&time=${thumbnail.timestamp
               .split(":")
               .reduce((acc, time) => 60 * acc + +time)}`}
             alt={`Thumbnail at ${thumbnail.timestamp}`}
-            width={120}
-            height={68}
+            width={0}
+            height={0}
+            sizes="(min-width: 1536px) 8vw, 120px"
             loading="lazy"
             decoding="async"
-            className="object-cover"
-            style={{ width: "120px", height: "68px" }}
+            className="object-cover w-[120px] h-auto 2xl:w-[8vw]"
+            style={{ aspectRatio: cssAspectRatio }}
           />
         ) : (
           <VideoThumbnail
             playbackId={playbackId}
             timestamp={thumbnail.timestamp}
-            isHovered={hoveredWork === itemId}
-            className=""
+            isHovered={hoveredWork === itemId && itemCategory === activeFilter}
+            className="w-[120px] h-auto 2xl:w-[8vw]"
+            style={{ aspectRatio: cssAspectRatio }}
           />
         )
       ) : (
         <div
-          className="bg-gray-800"
-          style={{ width: "120px", height: "68px" }}
+          className="bg-gray-800 w-[120px] h-auto 2xl:w-[8vw]"
+          style={{ aspectRatio: cssAspectRatio }}
         />
       )}
     </div>
@@ -198,7 +210,7 @@ function WorkItem({
       },
       {
         rootMargin: "150px",
-        threshold: 0.1,
+        threshold: 0.05,
       }
     );
 
@@ -259,7 +271,7 @@ function WorkItem({
             </h3>
             {item.title && (
               <h4
-                className={`transition-colors duration-500 ease-in-out ${
+                className={`transition-colors duration-500 ease-in-out font-normal ${
                   activeFilter === "narrative"
                     ? "text-white"
                     : activeFilter === "commercial"
@@ -272,7 +284,7 @@ function WorkItem({
             )}
             {item.type && (
               <p
-                className={`opacity-60 transition-colors duration-500 ease-in-out ${
+                className={`opacity-60 transition-colors duration-500 ease-in-out font-normal ${
                   activeFilter === "narrative"
                     ? "text-white"
                     : activeFilter === "commercial"
@@ -285,7 +297,7 @@ function WorkItem({
             )}
             {item.year && (
               <p
-                className={`opacity-60 transition-colors duration-500 ease-in-out ${
+                className={`opacity-60 transition-colors duration-500 ease-in-out font-normal ${
                   activeFilter === "narrative"
                     ? "text-white"
                     : activeFilter === "commercial"
@@ -297,7 +309,7 @@ function WorkItem({
               </p>
             )}
             <p
-              className={`opacity-60 transition-colors duration-500 ease-in-out ${
+              className={`opacity-60 transition-colors duration-500 ease-in-out font-normal ${
                 activeFilter === "narrative"
                   ? "text-white"
                   : activeFilter === "commercial"
@@ -327,8 +339,10 @@ function WorkItem({
                     hoveredWork={hoveredWork}
                     itemId={item._id}
                     activeFilter={activeFilter}
+                    itemCategory={item.category}
                     setHoveredThumbnail={setHoveredThumbnail}
                     index={index}
+                    aspectRatio={item.video.asset.data?.aspect_ratio}
                   />
                 );
               })}
