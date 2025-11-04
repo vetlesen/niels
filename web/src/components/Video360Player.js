@@ -13,6 +13,7 @@ function VideoSphere({ videoUrl, videoRef, isHLS }) {
   useEffect(() => {
     let hls = null;
     let videoTexture = null;
+    let textureCreationTimeout = null;
 
     const initVideo = async () => {
       try {
@@ -31,102 +32,91 @@ function VideoSphere({ videoUrl, videoRef, isHLS }) {
         // Store reference so parent can access it
         videoRef.current = video;
 
-        // Function to create texture once video is ready
-        const createTexture = () => {
-          if (videoTexture) return; // Already created
+        // Create texture immediately - VideoTexture will handle updates
+        videoTexture = new THREE.VideoTexture(video);
+        videoTexture.colorSpace = THREE.SRGBColorSpace;
+        videoTexture.minFilter = THREE.LinearFilter;
+        videoTexture.magFilter = THREE.LinearFilter;
+        videoTexture.generateMipmaps = false;
+        videoTexture.format = THREE.RGBAFormat;
 
-          // Double-check video has data
-          if (video.readyState < video.HAVE_CURRENT_DATA) {
-            console.log("Video not ready yet, waiting...");
-            return;
-          }
-
-          videoTexture = new THREE.VideoTexture(video);
-
-          // Video-specific texture settings
-          videoTexture.colorSpace = THREE.SRGBColorSpace;
-          videoTexture.minFilter = THREE.LinearFilter;
-          videoTexture.magFilter = THREE.LinearFilter;
-          videoTexture.generateMipmaps = false;
-          videoTexture.format = THREE.RGBAFormat;
-          videoTexture.needsUpdate = true;
-
-          setTexture(videoTexture);
-          console.log("✓ Video texture created");
-        };
-
-        // Wait for video to have loaded data before creating texture
-        const onLoadedData = () => {
-          console.log("✓ Video data loaded, creating texture");
-          createTexture();
-        };
-
-        const onCanPlay = () => {
-          console.log("✓ Video can play");
-          createTexture();
-        };
-
-        video.addEventListener("loadeddata", onLoadedData);
-        video.addEventListener("canplay", onCanPlay);
+        setTexture(videoTexture);
+        console.log("✓ Video texture created");
 
         // Check if it's an HLS stream
         if (videoUrl.includes(".m3u8") || isHLS) {
           console.log("Loading HLS stream from Mux...");
 
-          // Dynamically import hls.js
-          const Hls = (await import("hls.js")).default;
-
-          if (Hls.isSupported()) {
-            hls = new Hls({
-              enableWorker: true,
-              lowLatencyMode: false,
-              backBufferLength: 90,
-              // Mobile-specific optimizations
-              maxBufferLength: 30,
-              maxMaxBufferLength: 60,
-              maxBufferSize: 60 * 1000 * 1000,
-              maxBufferHole: 0.5,
-            });
-
-            hls.loadSource(videoUrl);
-            hls.attachMedia(video);
-
-            hls.on(Hls.Events.MANIFEST_PARSED, () => {
-              console.log("✓ HLS manifest loaded");
-            });
-
-            hls.on(Hls.Events.ERROR, (event, data) => {
-              console.error("HLS error:", data);
-              if (data.fatal) {
-                switch (data.type) {
-                  case Hls.ErrorTypes.NETWORK_ERROR:
-                    console.error("Fatal network error, trying to recover...");
-                    hls.startLoad();
-                    break;
-                  case Hls.ErrorTypes.MEDIA_ERROR:
-                    console.error("Fatal media error, trying to recover...");
-                    hls.recoverMediaError();
-                    break;
-                  default:
-                    console.error("Fatal error, cannot recover");
-                    setError("Failed to load video stream");
-                    break;
-                }
-              }
-            });
-          } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-            // Native HLS support (Safari)
-            console.log("Using native HLS support");
+          // IMPORTANT: Check for native HLS support FIRST (Safari/iOS)
+          // Native HLS is more reliable on mobile Safari than HLS.js
+          if (video.canPlayType("application/vnd.apple.mpegurl")) {
+            console.log("Using native HLS support (Safari/iOS)");
             video.src = videoUrl;
+            video.load(); // Explicitly load the video
           } else {
-            console.error("HLS is not supported in this browser");
-            setError("HLS not supported");
-            return;
+            // Fallback to HLS.js for browsers without native HLS support
+            const Hls = (await import("hls.js")).default;
+
+            if (Hls.isSupported()) {
+              console.log("Using HLS.js");
+              hls = new Hls({
+                enableWorker: true,
+                lowLatencyMode: false,
+                backBufferLength: 90,
+                // Mobile-specific optimizations
+                maxBufferLength: 30,
+                maxMaxBufferLength: 60,
+                maxBufferSize: 60 * 1000 * 1000,
+                maxBufferHole: 0.5,
+                // Additional mobile optimizations
+                startLevel: -1, // Auto quality selection
+                capLevelToPlayerSize: true,
+                maxLoadingDelay: 4,
+                minAutoBitrate: 0,
+                // Prevent stalling
+                liveSyncDurationCount: 3,
+                liveMaxLatencyDurationCount: 10,
+              });
+
+              hls.loadSource(videoUrl);
+              hls.attachMedia(video);
+
+              hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                console.log("✓ HLS manifest loaded");
+              });
+
+              hls.on(Hls.Events.ERROR, (event, data) => {
+                console.error("HLS error:", data);
+                if (data.fatal) {
+                  switch (data.type) {
+                    case Hls.ErrorTypes.NETWORK_ERROR:
+                      console.error(
+                        "Fatal network error, trying to recover..."
+                      );
+                      hls.startLoad();
+                      break;
+                    case Hls.ErrorTypes.MEDIA_ERROR:
+                      console.error("Fatal media error, trying to recover...");
+                      hls.recoverMediaError();
+                      break;
+                    default:
+                      console.error("Fatal error, cannot recover");
+                      setError("Failed to load video stream");
+                      break;
+                  }
+                }
+              });
+            } else {
+              console.error("HLS is not supported in this browser");
+              setError("HLS not supported");
+              return;
+            }
           }
         } else {
           // Regular video file (MP4, WebM, etc.)
           console.log("Loading regular video file...");
           video.src = videoUrl;
+          video.load(); // Explicitly load the video
         }
       } catch (err) {
         console.error("Error initializing video:", err);
@@ -234,12 +224,19 @@ export default function Video360Player({ videoUrl, isHLS = false }) {
 
   return (
     <div
-      className="relative"
+      className="relative bg-black/5"
       style={{
         width: "100%",
         height: "100%",
       }}
     >
+      {/* Loading indicator */}
+      {isLoading && (
+        <div className="absolute h-full w-full flex justify-center items-center">
+          <span className="animate-spin">Loading</span>
+        </div>
+      )}
+
       <Canvas
         camera={{
           fov: 75,
@@ -266,21 +263,6 @@ export default function Video360Player({ videoUrl, isHLS = false }) {
           maxDistance={10}
         />
       </Canvas>
-
-      {/* Loading indicator */}
-      {isLoading && (
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            zIndex: 1000,
-          }}
-        >
-          Loading video...
-        </div>
-      )}
 
       {/* Controls */}
       <div className="absolute top-2 left-2 flex gap-2 z-[1000]">
