@@ -12,6 +12,7 @@ function VideoSphere({ videoUrl, videoRef, isHLS }) {
 
   useEffect(() => {
     let hls = null;
+    let videoTexture = null;
 
     const initVideo = async () => {
       try {
@@ -23,8 +24,50 @@ function VideoSphere({ videoUrl, videoRef, isHLS }) {
         video.playsInline = true;
         video.preload = "auto";
 
+        // Mobile-specific attributes
+        video.setAttribute("webkit-playsinline", "true");
+        video.setAttribute("playsinline", "true");
+
         // Store reference so parent can access it
         videoRef.current = video;
+
+        // Function to create texture once video is ready
+        const createTexture = () => {
+          if (videoTexture) return; // Already created
+
+          // Double-check video has data
+          if (video.readyState < video.HAVE_CURRENT_DATA) {
+            console.log("Video not ready yet, waiting...");
+            return;
+          }
+
+          videoTexture = new THREE.VideoTexture(video);
+
+          // Video-specific texture settings
+          videoTexture.colorSpace = THREE.SRGBColorSpace;
+          videoTexture.minFilter = THREE.LinearFilter;
+          videoTexture.magFilter = THREE.LinearFilter;
+          videoTexture.generateMipmaps = false;
+          videoTexture.format = THREE.RGBAFormat;
+          videoTexture.needsUpdate = true;
+
+          setTexture(videoTexture);
+          console.log("✓ Video texture created");
+        };
+
+        // Wait for video to have loaded data before creating texture
+        const onLoadedData = () => {
+          console.log("✓ Video data loaded, creating texture");
+          createTexture();
+        };
+
+        const onCanPlay = () => {
+          console.log("✓ Video can play");
+          createTexture();
+        };
+
+        video.addEventListener("loadeddata", onLoadedData);
+        video.addEventListener("canplay", onCanPlay);
 
         // Check if it's an HLS stream
         if (videoUrl.includes(".m3u8") || isHLS) {
@@ -38,6 +81,11 @@ function VideoSphere({ videoUrl, videoRef, isHLS }) {
               enableWorker: true,
               lowLatencyMode: false,
               backBufferLength: 90,
+              // Mobile-specific optimizations
+              maxBufferLength: 30,
+              maxMaxBufferLength: 60,
+              maxBufferSize: 60 * 1000 * 1000,
+              maxBufferHole: 0.5,
             });
 
             hls.loadSource(videoUrl);
@@ -80,20 +128,6 @@ function VideoSphere({ videoUrl, videoRef, isHLS }) {
           console.log("Loading regular video file...");
           video.src = videoUrl;
         }
-
-        // Create video texture
-        const videoTexture = new THREE.VideoTexture(video);
-
-        // Video-specific texture settings
-        videoTexture.colorSpace = THREE.SRGBColorSpace;
-        videoTexture.minFilter = THREE.LinearFilter;
-        videoTexture.magFilter = THREE.LinearFilter;
-        videoTexture.generateMipmaps = false;
-        videoTexture.format = THREE.RGBAFormat;
-        videoTexture.needsUpdate = true;
-
-        setTexture(videoTexture);
-        console.log("✓ Video texture created");
       } catch (err) {
         console.error("Error initializing video:", err);
         setError(err.message);
@@ -107,12 +141,13 @@ function VideoSphere({ videoUrl, videoRef, isHLS }) {
       if (videoRef.current) {
         videoRef.current.pause();
         videoRef.current.src = "";
+        videoRef.current.load(); // Reset video element
       }
       if (hls) {
         hls.destroy();
       }
-      if (texture) {
-        texture.dispose();
+      if (videoTexture) {
+        videoTexture.dispose();
       }
       videoRef.current = null;
     };
