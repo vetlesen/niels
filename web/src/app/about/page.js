@@ -15,7 +15,7 @@ export default async function About() {
     <main className="px-4 grid grid-cols-12 gap-x-4">
       {/* Bio Section */}
       {settings?.bio && (
-        <section className="mb-12 col-span-6 mt-52">
+        <section className="mb-6 md:mb-12 col-span-12 md:col-span-6 mt-52">
           <h1 className="mb-4 uppercase">About</h1>
           <div className="prose max-w-none font-normal">
             <PortableText value={settings.bio} />
@@ -25,7 +25,7 @@ export default async function About() {
 
       {/* Image Section
       {settings?.image && (
-        <section className="mb-12 col-span-2 col-start-11 mt-52">
+        <section className="mb-6 md:mb-12 col-span-2 col-start-11 mt-12 md:mt-52">
           <Image
             src={settings.image.asset.url}
             alt="About"
@@ -36,13 +36,16 @@ export default async function About() {
         </section>
       )} */}
 
-      <section className="mb-12 col-span-5 col-start-8 mt-52 h-96">
+      <section className="mb-24 col-span-12 md:col-span-5 md:col-start-8 mt-12 md:mt-52 h-96">
         <Video360Player videoUrl="https://stream.mux.com/p003wY5GkeoYnrkElL3J00qIA02ytwwPRl0201kcWpg8T8k8.m3u8" />
+        <p className="pt-2 font-normal text-sm opacity-50">
+          Drag and rotate on the video
+        </p>
       </section>
 
       {/* Contact Section */}
       {settings?.contact && settings.contact.length > 0 && (
-        <section className="mb-12 col-start-1 col-span-6">
+        <section className="mb-6 md:mb-12 col-start-1 col-span-12 md:col-span-6">
           <h2 className="mb-4 uppercase">Contact</h2>
           <div className="space-y-2">
             {settings.contact.map((item, index) => (
@@ -57,7 +60,7 @@ export default async function About() {
 
       {/* Representation Section */}
       {settings?.representation && settings.representation.length > 0 && (
-        <section className="mb-12 col-start-1 col-span-6">
+        <section className="mb-6 md:mb-12 col-start-1 col-span-12 md:col-span-6">
           <h2 className="mb-4 uppercase">Representation</h2>
           <div className="space-y-2">
             {settings.representation.map((item, index) => (
@@ -71,7 +74,7 @@ export default async function About() {
       )}
 
       {awards.length > 0 && (
-        <section className="mb-12 col-start-1 col-span-12">
+        <section className="mb-6 md:mb-12 col-start-1 col-span-12">
           {/* Awards Section */}
           <h1 className="mb-2 col-span-6 uppercase">Awards</h1>
 
@@ -91,7 +94,9 @@ export default async function About() {
                   href={`/work/${firstWork.slug.current}`}
                   className="mb-4 hover:opacity-70 col-span-full gap-4 grid grid-cols-12"
                 >
-                  <p className="col-span-3 font-normal">{workNames}</p>
+                  <p className="col-span-6 md:col-span-3 font-normal">
+                    {workNames}
+                  </p>
                   <p className="col-span-6 font-normal">
                     {award.name} ({award.year})
                   </p>

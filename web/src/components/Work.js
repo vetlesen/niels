@@ -257,7 +257,7 @@ function WorkItem({
           onMouseEnter={() => onMouseEnter(item._id)}
           onMouseLeave={() => onMouseLeave(null)}
         >
-          <div className={`flex flex-row space-x-2 px-2 `}>
+          <div className={`flex flex-row space-x-2 px-2 pb-2`}>
             <h3
               className={`transition-colors duration-500 ease-in-out ${
                 activeFilter === "narrative"

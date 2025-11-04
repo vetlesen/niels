@@ -50,7 +50,7 @@ export function ThemeProvider({ children }) {
       document.body.style.backgroundColor = "";
       document.body.style.color = "";
       document.body.className =
-        "bg-[#383838] text-white transition-all duration-500 ease-in-out";
+        "bg-[#202020] text-white transition-all duration-500 ease-in-out";
     } else if (activeFilter === "commercial") {
       document.body.style.backgroundColor = "";
       document.body.style.color = "";
