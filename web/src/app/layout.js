@@ -1,5 +1,7 @@
 import "./globals.css";
-import Nav from "../components/nav";
+import Nav from "../components/Nav";
+import Footer from "../components/Footer";
+
 import { ThemeProvider } from "../contexts/ThemeContext";
 
 export const metadata = {
@@ -15,6 +17,7 @@ export default function RootLayout({ children }) {
         <ThemeProvider>
           <Nav />
           {children}
+          <Footer />
         </ThemeProvider>
       </body>
     </html>

@@ -1,7 +1,10 @@
+import { SparklesIcon } from "@sanity/icons";
+
 export default {
   name: "awards",
   title: "Awards",
   type: "document",
+  icon: SparklesIcon,
   preview: {
     select: {
       name: "name",

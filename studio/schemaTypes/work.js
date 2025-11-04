@@ -1,9 +1,14 @@
 import ThumbnailsArrayInput from "../components/ThumbnailsArrayInput.jsx";
+import {
+  orderRankField,
+  orderRankOrdering,
+} from "@sanity/orderable-document-list";
 
 export default {
   name: "work",
   title: "Work",
   type: "document",
+  orderings: [orderRankOrdering],
   preview: {
     select: {
       name: "name",
@@ -19,6 +24,7 @@ export default {
     },
   },
   fields: [
+    orderRankField({ type: "work" }),
     {
       name: "name",
       title: "Name",
