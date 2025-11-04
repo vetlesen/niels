@@ -1,5 +1,6 @@
+import { Suspense } from "react";
 import "./globals.css";
-import Nav from "../components/Nav";
+import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
 
 import { ThemeProvider } from "../contexts/ThemeContext";
@@ -14,11 +15,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`antialiased`}>
-        <ThemeProvider>
-          <Nav />
-          {children}
-          <Footer />
-        </ThemeProvider>
+        <Suspense fallback={null}>
+          <ThemeProvider>
+            <Navigation />
+            {children}
+            <Footer />
+          </ThemeProvider>
+        </Suspense>
       </body>
     </html>
   );
