@@ -55,16 +55,16 @@ function VideoSphere({ videoUrl, videoRef, isHLS }) {
             hls = new Hls({
               enableWorker: true,
               lowLatencyMode: false,
-              // Aggressive buffering for better quality
-              maxBufferLength: 60,
-              maxMaxBufferLength: 120,
-              maxBufferSize: 120 * 1000 * 1000,
-              maxBufferHole: 1,
-              // Start with higher quality
-              startLevel: 2, // Start at a higher quality level
+              // Balanced buffering
+              maxBufferLength: 30,
+              maxMaxBufferLength: 60,
+              maxBufferSize: 60 * 1000 * 1000,
+              maxBufferHole: 0.5,
+              // Let HLS.js auto-select starting quality, but allow it to go higher
+              startLevel: -1, // Auto-select based on bandwidth
               capLevelToPlayerSize: false, // Don't limit quality by player size
-              // Allow higher bitrates
-              abrEwmaDefaultEstimate: 5000000, // 5 Mbps default estimate
+              // Moderate bandwidth assumptions
+              abrEwmaDefaultEstimate: 2000000, // 2 Mbps default (more realistic)
               abrBandWidthFactor: 0.95,
               abrBandWidthUpFactor: 0.7,
             });
