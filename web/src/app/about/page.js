@@ -38,6 +38,9 @@ export default async function About() {
 
       <section className="mb-12 col-span-5 col-start-8 mt-52 h-96">
         <Video360Player videoUrl="https://stream.mux.com/p003wY5GkeoYnrkElL3J00qIA02ytwwPRl0201kcWpg8T8k8.m3u8" />
+        <p className="pt-2 font-normal text-sm opacity-50">
+          Drag and rotate on the video
+        </p>
       </section>
 
       {/* Contact Section */}
