@@ -22,10 +22,12 @@ export function ThemeProvider({ children }) {
   // Sync with URL on mount and when searchParams change
   useEffect(() => {
     const urlFilter = searchParams.get("filter");
+    const isHomepage = pathname === "/";
+
     if (urlFilter === "narrative" || urlFilter === "commercial") {
       setActiveFilter(urlFilter);
-    } else if (!urlFilter) {
-      // If no filter in URL, set default to commercial
+    } else if (!urlFilter && isHomepage) {
+      // If no filter in URL and on homepage, set default to commercial
       const params = new URLSearchParams(searchParams.toString());
       params.set("filter", "commercial");
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
@@ -73,10 +75,13 @@ export function ThemeProvider({ children }) {
     setActiveFilter(category);
     setCustomColor(null); // Reset custom color when changing filter
 
-    // Update URL with new filter
-    const params = new URLSearchParams(searchParams.toString());
-    params.set("filter", category);
-    router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    // Only update URL with filter on homepage
+    const isHomepage = pathname === "/";
+    if (isHomepage) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("filter", category);
+      router.push(`${pathname}?${params.toString()}`, { scroll: false });
+    }
   };
 
   const setBackgroundColor = (color) => {
