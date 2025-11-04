@@ -1,5 +1,5 @@
 import "./globals.css";
-import Nav from "../components/Nav";
+import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
 
 import { ThemeProvider } from "../contexts/ThemeContext";
@@ -15,7 +15,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={`antialiased`}>
         <ThemeProvider>
-          <Nav />
+          <Navigation />
           {children}
           <Footer />
         </ThemeProvider>
