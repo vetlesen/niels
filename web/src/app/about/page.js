@@ -4,6 +4,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { PortableText } from "@portabletext/react";
 
+// comps
+import Video360Player from "@/components/Video360Player";
+
 export default async function About() {
   const settings = await getSettings();
   const awards = await getAwards();
@@ -20,7 +23,7 @@ export default async function About() {
         </section>
       )}
 
-      {/* Image Section */}
+      {/* Image Section
       {settings?.image && (
         <section className="mb-12 col-span-2 col-start-11 mt-52">
           <Image
@@ -31,7 +34,11 @@ export default async function About() {
             className="w-full h-auto"
           />
         </section>
-      )}
+      )} */}
+
+      <section className="mb-12 col-span-5 col-start-8 mt-52 h-96">
+        <Video360Player videoUrl="https://stream.mux.com/p003wY5GkeoYnrkElL3J00qIA02ytwwPRl0201kcWpg8T8k8.m3u8" />
+      </section>
 
       {/* Contact Section */}
       {settings?.contact && settings.contact.length > 0 && (
