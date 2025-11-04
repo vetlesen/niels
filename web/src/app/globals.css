@@ -81,3 +81,13 @@
   --center-controls: none;
   --bottom-play-button: none;
 }
+
+/* Hide scrollbars while maintaining scroll functionality */
+.overflow-x-auto::-webkit-scrollbar {
+  display: none;
+}
+
+.overflow-x-auto {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}

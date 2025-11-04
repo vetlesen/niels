@@ -1,16 +1,19 @@
 "use client";
 
-import { useTheme } from "../contexts/ThemeContext";
+import Link from "next/link";
+import AnimatedName from "./AnimatedName";
 
 export default function Footer() {
-  const { activeFilter } = useTheme();
-
   return (
     <footer className="flex flex-col justify-between px-4 pt-42 pb-6">
-      <p>NW</p>
-      <p className="font-normal text-xs opacity-50 pt-42">
-        design/dev jonas vetlesen
-      </p>
+      <AnimatedName />
+      <Link
+        href={"https://vetlesen.no"}
+        target={"_blank"}
+        className="font-normal text-xs opacity-50 mt-42"
+      >
+        Design + Dev <br></br>Jonas Vetlesen
+      </Link>
     </footer>
   );
 }

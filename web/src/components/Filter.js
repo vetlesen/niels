@@ -28,36 +28,36 @@ export default function Filter() {
   }, [lastScrollY]);
 
   return (
-    <section className="h-[50svh] flex justify-start items-center px-4">
+    <section className="h-[50svh] flex justify-start items-start px-4">
       <div
-        className={`space-x-2 flex top-2 transition-all duration-300  z-9999 ${
-          isFixed ? "fixed" : "sticky"
+        className={`space-x-2 flex top-2 z-9999 ${
+          isFixed ? "fixed" : "sticky mt-52"
         }`}
       >
         <button
           onClick={() => setFilter("commercial")}
-          className="flex flex-row gap-2 items-baseline uppercase"
+          className="flex flex-row gap-2 items-baseline uppercase cursor-pointer group transition-all"
         >
           <div
             className={`w-3 h-3 flex ${
               activeFilter === "commercial"
                 ? activeFilter === "narrative"
-                  ? "bg-white border border-white  "
-                  : "bg-black border border-black text-white"
-                : " border"
+                  ? "border border-white "
+                  : "bg-black border border-black text-white "
+                : " border group-hover:bg-white/50"
             }`}
           />
           Commercial
         </button>
         <button
           onClick={() => setFilter("narrative")}
-          className="flex flex-row gap-2 items-baseline uppercase"
+          className="flex flex-row gap-2 items-baseline uppercase cursor-pointer group transition-all"
         >
           <div
             className={`w-3 h-3 flex ${
               activeFilter === "narrative"
-                ? "bg-white border border-white  "
-                : " border"
+                ? "bg-white border border-white "
+                : " border group-hover:bg-black/20"
             }`}
           />
           Narrative

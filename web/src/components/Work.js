@@ -242,7 +242,7 @@ function WorkItem({
   return (
     <div
       ref={workRef}
-      className={`transition-all duration-500 ease-out ${
+      className={`transition-all duration-500 ease-out  mt-12 ${
         shouldRender ? "opacity-100" : "opacity-0"
       }`}
     >
@@ -257,7 +257,7 @@ function WorkItem({
           onMouseEnter={() => onMouseEnter(item._id)}
           onMouseLeave={() => onMouseLeave(null)}
         >
-          <div className={`flex flex-row space-x-2 pt-2 px-2 `}>
+          <div className={`flex flex-row space-x-2 px-2 `}>
             <h3
               className={`transition-colors duration-500 ease-in-out ${
                 activeFilter === "narrative"
@@ -322,10 +322,9 @@ function WorkItem({
           </div>
           {item.video?.asset?.playbackId && item.thumbnails && (
             <div
-              className={`flex gap-2 bg-black p-2 overflow-hidden ${
+              className={`flex gap-2 bg-black p-2 overflow-x-auto ${
                 item.category !== activeFilter ? "bg-yellow" : ""
               }`}
-              style={{ minHeight: "84px" }}
             >
               {item.thumbnails.map((thumbnail, index) => {
                 const thumbnailId = `${item._id}-${index}`;
@@ -356,10 +355,7 @@ function WorkItem({
             <div className="h-6 w-32 bg-gray-800 rounded animate-pulse" />
             <div className="h-6 w-24 bg-gray-800 rounded animate-pulse" />
           </div>
-          <div
-            className="flex gap-2 bg-black p-2 overflow-x-auto"
-            style={{ minHeight: "84px" }}
-          >
+          <div className="flex gap-2 bg-black p-2 overflow-x-auto">
             {Array.from({ length: 12 }).map((_, index) => (
               <div
                 key={index}
