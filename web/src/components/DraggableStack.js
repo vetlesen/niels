@@ -1,263 +1,635 @@
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
-import VideoThumbnail from "./VideoThumbnail";
+import { useState, useEffect, useRef } from "react";
+
+// Deterministic pseudo-random function based on seed
+function seededRandom(seed) {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
 
 // Individual draggable image component
-const DraggableImage = ({ item, index, onBringToFront, zIndex }) => {
-  // Generate random position around center of screen on initial load
-  const getRandomPosition = () => {
-    // Check if window is available (client-side)
-    if (typeof window === "undefined") {
-      return { top: 0, left: 0 };
-    }
+function DraggableImage({
+  image,
+  index,
+  totalImages,
+  onBringToFront,
+  cardRefs,
+  scrollProgress,
+}) {
+  const imageRef = useRef(null);
+  const velocityRef = useRef({ x: 0, y: 0 });
+  const lastPositionRef = useRef({ x: 0, y: 0 });
+  const lastTimeRef = useRef(Date.now());
+  const animationFrameRef = useRef(null);
 
-    const centerX = window.innerWidth / 2;
-    const centerY = window.innerHeight / 2;
-    const randomRange = 800; // pixels around center
-
-    return {
-      top: centerY - 100 + (Math.random() - 0.5) * randomRange, // -100 to account for image height
-      left: centerX - 100 + (Math.random() - 0.5) * randomRange, // -100 to account for image width
-    };
-  };
-
-  const [position, setPosition] = useState({ top: 0, left: 0 });
-  const [rotation, setRotation] = useState(0);
-  const [rotateX, setRotateX] = useState(5); // Default slight 3D tilt like sticky notes
-  const [velocity, setVelocity] = useState({ x: 0, y: 0 });
-  const [angularVelocity, setAngularVelocity] = useState(0);
-
-  // Set random position after component mounts (client-side)
+  // Store ref in parent's array
   useEffect(() => {
-    setPosition(getRandomPosition());
-  }, []);
+    if (cardRefs && cardRefs.current) {
+      cardRefs.current[index] = imageRef;
+    }
+  }, [index, cardRefs]);
 
   const [isDragging, setIsDragging] = useState(false);
-  const dragRef = useRef({
-    pos1: 0,
-    pos2: 0,
-    pos3: 0,
-    pos4: 0,
-    lastTime: 0,
-    velocityHistory: [],
+  const [isSettling, setIsSettling] = useState(false);
+
+  const [position, setPosition] = useState({
+    x: index * 5,
+    y: index * 5,
   });
+  const [rotation, setRotation] = useState(index * 2 - 4);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
+  const [zIndex, setZIndex] = useState(totalImages - index);
 
-  const dragMouseDown = (e) => {
-    e.preventDefault();
-    // Bring this item to the front when clicked
-    onBringToFront(index);
+  // Apply random positioning only after hydration
+  useEffect(() => {
+    const initialX = index * 5 + seededRandom(index * 123) * 30 - 15;
+    const initialY = index * 5 + seededRandom(index * 456) * 30 - 15;
+    const initialRot = index * 2 - 4 + seededRandom(index * 789) * 10 - 5;
 
-    // Get the mouse cursor position at startup
-    dragRef.current.pos3 = e.clientX;
-    dragRef.current.pos4 = e.clientY;
-    dragRef.current.lastTime = Date.now();
-    dragRef.current.velocityHistory = [];
-    setIsDragging(true);
+    setPosition({ x: initialX, y: initialY });
+    setRotation(initialRot);
+    lastPositionRef.current = { x: initialX, y: initialY };
+  }, [index]);
 
-    // Reset velocities when starting drag
-    setVelocity({ x: 0, y: 0 });
-    setAngularVelocity(0);
+  // Enhanced physics simulation for momentum
+  const applyMomentum = () => {
+    if (!isSettling) return;
 
-    // Animate to "lifted" state when grabbed
-    setRotateX(30);
+    const friction = 0.94; // Slightly more slide
+    const rotationFriction = 0.96;
+    const minVelocity = 0.05;
+    const minRotationVelocity = 0.1;
 
-    // Attach event listeners to document
-    document.addEventListener("mouseup", closeDragElement);
-    document.addEventListener("mousemove", elementDrag);
-  };
+    velocityRef.current.x *= friction;
+    velocityRef.current.y *= friction;
 
-  const elementDrag = (e) => {
-    e.preventDefault();
-    const currentTime = Date.now();
-    const deltaTime = currentTime - dragRef.current.lastTime;
+    // Apply rotation momentum based on horizontal velocity
+    const rotationMomentum = velocityRef.current.x * 0.1;
+    setRotation((prev) => prev + rotationMomentum);
 
-    // Calculate the new cursor position
-    dragRef.current.pos1 = dragRef.current.pos3 - e.clientX;
-    dragRef.current.pos2 = dragRef.current.pos4 - e.clientY;
-
-    // Calculate velocity
-    const velX = -dragRef.current.pos1 / (deltaTime || 1);
-    const velY = -dragRef.current.pos2 / (deltaTime || 1);
-
-    // Store velocity history for momentum calculation
-    dragRef.current.velocityHistory.push({
-      x: velX,
-      y: velY,
-      time: currentTime,
-    });
-    if (dragRef.current.velocityHistory.length > 5) {
-      dragRef.current.velocityHistory.shift();
+    if (
+      Math.abs(velocityRef.current.x) < minVelocity &&
+      Math.abs(velocityRef.current.y) < minVelocity
+    ) {
+      setIsSettling(false);
+      velocityRef.current = { x: 0, y: 0 };
+      return;
     }
 
-    // Calculate rotation based on perpendicular velocity
-    const speed = Math.sqrt(velX * velX + velY * velY);
-    const crossProduct =
-      velX * dragRef.current.pos2 - velY * dragRef.current.pos1;
-    const rotationForce = crossProduct * 0.001; // Scale factor for rotation sensitivity
-
-    // Apply resistance to movement (like paper drag)
-    const resistance = 0.7;
-    const dampedPosX = dragRef.current.pos1 * resistance;
-    const dampedPosY = dragRef.current.pos2 * resistance;
-
-    dragRef.current.pos3 = e.clientX;
-    dragRef.current.pos4 = e.clientY;
-    dragRef.current.lastTime = currentTime;
-
-    // Set the element's new position with resistance
     setPosition((prev) => ({
-      top: prev.top - dampedPosY,
-      left: prev.left - dampedPosX,
+      x: prev.x + velocityRef.current.x,
+      y: prev.y + velocityRef.current.y,
     }));
 
-    // Update rotation with some damping
-    setRotation((prev) => prev + rotationForce);
-    setVelocity({ x: velX, y: velY });
+    animationFrameRef.current = requestAnimationFrame(applyMomentum);
   };
 
-  const closeDragElement = () => {
-    // Calculate final momentum from velocity history
-    if (dragRef.current.velocityHistory.length > 0) {
-      const recentVelocities = dragRef.current.velocityHistory.slice(-3);
-      const avgVelX =
-        recentVelocities.reduce((sum, v) => sum + v.x, 0) /
-        recentVelocities.length;
-      const avgVelY =
-        recentVelocities.reduce((sum, v) => sum + v.y, 0) /
-        recentVelocities.length;
-
-      setVelocity({ x: avgVelX, y: avgVelY });
-
-      // Set angular velocity based on final movement
-      const finalSpeed = Math.sqrt(avgVelX * avgVelX + avgVelY * avgVelY);
-      setAngularVelocity(finalSpeed * 0.01 * (Math.random() - 0.5));
-    }
-
-    // Animate back to "settled" state when released
-    setRotateX(5);
-
-    // Stop moving when mouse button is released
-    setIsDragging(false);
-    document.removeEventListener("mouseup", closeDragElement);
-    document.removeEventListener("mousemove", elementDrag);
-  };
-
-  // Physics animation loop for momentum and decay
   useEffect(() => {
-    if (
-      !isDragging &&
-      (Math.abs(velocity.x) > 0.1 ||
-        Math.abs(velocity.y) > 0.1 ||
-        Math.abs(angularVelocity) > 0.01)
-    ) {
-      const animationFrame = requestAnimationFrame(() => {
-        // Apply momentum with decay
-        const decay = 0.95;
-        const newVelX = velocity.x * decay;
-        const newVelY = velocity.y * decay;
-        const newAngularVel = angularVelocity * decay;
-
-        setPosition((prev) => ({
-          top: prev.top + newVelY,
-          left: prev.left + newVelX,
-        }));
-
-        setRotation((prev) => prev + newAngularVel);
-        setVelocity({ x: newVelX, y: newVelY });
-        setAngularVelocity(newAngularVel);
-      });
-
-      return () => cancelAnimationFrame(animationFrame);
+    if (isSettling) {
+      animationFrameRef.current = requestAnimationFrame(applyMomentum);
     }
-  }, [velocity, angularVelocity, isDragging]);
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [isSettling]);
+
+  const handleMouseDown = (e) => {
+    e.preventDefault();
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    setIsSettling(false);
+    velocityRef.current = { x: 0, y: 0 };
+    lastTimeRef.current = Date.now();
+
+    // Calculate spread position based on scroll
+    const spreadAmount = scrollProgress * 180;
+    const angle = (index / totalImages) * Math.PI * 2;
+    const spreadX = Math.cos(angle) * spreadAmount;
+    const spreadY = Math.sin(angle) * spreadAmount;
+
+    if (imageRef.current) {
+      imageRef.current.style.transition = "";
+      const transform = imageRef.current.style.transform;
+      const match = transform.match(
+        /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
+      );
+      if (match) {
+        const currentX = parseFloat(match[1]) - spreadX;
+        const currentY = parseFloat(match[2]) - spreadY;
+        const currentRotation = parseFloat(match[3]);
+        setPosition({ x: currentX, y: currentY });
+        setRotation(currentRotation);
+        setInitialPosition({ x: currentX, y: currentY });
+        lastPositionRef.current = { x: currentX, y: currentY };
+      } else {
+        setInitialPosition(position);
+        lastPositionRef.current = position;
+      }
+    } else {
+      setInitialPosition(position);
+      lastPositionRef.current = position;
+    }
+
+    setIsDragging(true);
+    setDragStart({ x: e.clientX, y: e.clientY });
+    onBringToFront(index);
+  };
+
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+
+    const now = Date.now();
+    const deltaTime = now - lastTimeRef.current;
+    lastTimeRef.current = now;
+
+    const deltaX = e.clientX - dragStart.x;
+    const deltaY = e.clientY - dragStart.y;
+
+    const newX = initialPosition.x + deltaX;
+    const newY = initialPosition.y + deltaY;
+
+    // Calculate velocity with time-based smoothing
+    const velocityX = (newX - lastPositionRef.current.x) / (deltaTime || 1);
+    const velocityY = (newY - lastPositionRef.current.y) / (deltaTime || 1);
+
+    velocityRef.current = {
+      x: velocityX * 16, // Normalize to ~60fps
+      y: velocityY * 16,
+    };
+
+    lastPositionRef.current = { x: newX, y: newY };
+    setPosition({ x: newX, y: newY });
+
+    // Natural rotation based on horizontal movement
+    const rotationInfluence = velocityX * 0.5;
+    setRotation((prev) => prev + rotationInfluence);
+  };
+
+  const handleMouseUp = () => {
+    setIsDragging(false);
+    // Only apply momentum if velocity is significant
+    if (
+      Math.abs(velocityRef.current.x) > 0.5 ||
+      Math.abs(velocityRef.current.y) > 0.5
+    ) {
+      setIsSettling(true);
+    }
+  };
+
+  // Touch events
+  const handleTouchStart = (e) => {
+    const touch = e.touches[0];
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+    setIsSettling(false);
+    velocityRef.current = { x: 0, y: 0 };
+    lastTimeRef.current = Date.now();
+
+    // Calculate spread position based on scroll
+    const spreadAmount = scrollProgress * 180;
+    const angle = (index / totalImages) * Math.PI * 2;
+    const spreadX = Math.cos(angle) * spreadAmount;
+    const spreadY = Math.sin(angle) * spreadAmount;
+
+    if (imageRef.current) {
+      imageRef.current.style.transition = "";
+      const transform = imageRef.current.style.transform;
+      const match = transform.match(
+        /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
+      );
+      if (match) {
+        const currentX = parseFloat(match[1]) - spreadX;
+        const currentY = parseFloat(match[2]) - spreadY;
+        const currentRotation = parseFloat(match[3]);
+        setPosition({ x: currentX, y: currentY });
+        setRotation(currentRotation);
+        setInitialPosition({ x: currentX, y: currentY });
+        lastPositionRef.current = { x: currentX, y: currentY };
+      } else {
+        setInitialPosition(position);
+        lastPositionRef.current = position;
+      }
+    } else {
+      setInitialPosition(position);
+      lastPositionRef.current = position;
+    }
+
+    setIsDragging(true);
+    setDragStart({ x: touch.clientX, y: touch.clientY });
+    onBringToFront(index);
+  };
+
+  const handleTouchMove = (e) => {
+    if (!isDragging) return;
+    e.preventDefault();
+
+    const touch = e.touches[0];
+    const now = Date.now();
+    const deltaTime = now - lastTimeRef.current;
+    lastTimeRef.current = now;
+
+    const deltaX = touch.clientX - dragStart.x;
+    const deltaY = touch.clientY - dragStart.y;
+
+    const newX = initialPosition.x + deltaX;
+    const newY = initialPosition.y + deltaY;
+
+    const velocityX = (newX - lastPositionRef.current.x) / (deltaTime || 1);
+    const velocityY = (newY - lastPositionRef.current.y) / (deltaTime || 1);
+
+    velocityRef.current = {
+      x: velocityX * 16,
+      y: velocityY * 16,
+    };
+
+    lastPositionRef.current = { x: newX, y: newY };
+    setPosition({ x: newX, y: newY });
+
+    const rotationInfluence = velocityX * 0.5;
+    setRotation((prev) => prev + rotationInfluence);
+  };
+
+  const handleTouchEnd = () => {
+    setIsDragging(false);
+    if (
+      Math.abs(velocityRef.current.x) > 0.5 ||
+      Math.abs(velocityRef.current.y) > 0.5
+    ) {
+      setIsSettling(true);
+    }
+  };
+
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.addEventListener("touchmove", handleTouchMove, {
+        passive: false,
+      });
+      document.addEventListener("touchend", handleTouchEnd);
+      document.addEventListener("touchcancel", handleTouchEnd);
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.removeEventListener("touchmove", handleTouchMove);
+      document.removeEventListener("touchend", handleTouchEnd);
+      document.removeEventListener("touchcancel", handleTouchEnd);
+    };
+  }, [isDragging, dragStart, initialPosition]);
+
+  // Calculate spread position based on scroll
+  const spreadAmount = scrollProgress * 180;
+  const angle = (index / totalImages) * Math.PI * 2;
+  const spreadX = Math.cos(angle) * spreadAmount;
+  const spreadY = Math.sin(angle) * spreadAmount;
+
+  const finalX = position.x + spreadX;
+  const finalY = position.y + spreadY;
 
   return (
     <div
-      className={`absolute ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+      ref={imageRef}
+      className={`absolute select-none ${
+        isDragging ? "cursor-grabbing" : "cursor-grab"
+      }`}
       style={{
-        top: `${position.top}px`,
-        left: `${position.left}px`,
-        zIndex: isDragging ? 1000 : zIndex,
-        transform: `rotate(${rotation}deg) rotateX(${rotateX}deg)`,
-        transition: isDragging ? "none" : "transform 0.3s ease-out",
+        transform: `translate(${finalX}px, ${finalY}px) rotate(${rotation}deg)`,
+        transformOrigin: "center center",
+        zIndex: zIndex,
+        touchAction: "none",
+        transition:
+          isDragging || isSettling
+            ? "none"
+            : "transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
       }}
-      onMouseDown={dragMouseDown}
+      onMouseDown={handleMouseDown}
+      onTouchStart={handleTouchStart}
     >
-      {item?._type === "video" && item?.asset?.playbackId ? (
-        <VideoThumbnail
-          playbackId={item.asset.playbackId}
-          timestamp="0:00"
-          isHovered={true}
-          maxResolution="360p"
-          loopDuration={999999}
-          className="pointer-events-none select-none"
-          style={{
-            height: "200px",
-            width: "auto",
-            objectFit: "contain",
-          }}
-        />
-      ) : item?.asset?.url ? (
+      {image?.asset?.url ? (
         <img
-          src={item.asset.url}
-          alt={`Stack item ${index + 1}`}
-          className="pointer-events-none select-none"
+          src={image.asset.url}
+          alt={`Stack image ${index + 1}`}
+          className="pointer-events-none block"
           draggable={false}
           style={{
-            height: "200px",
+            maxWidth: "300px",
+            maxHeight: "400px",
             width: "auto",
-            objectFit: "contain",
+            height: "auto",
           }}
         />
       ) : (
-        <div className="w-32 h-48 bg-gray-100 flex items-center justify-center text-gray-500">
-          Item {index + 1}
+        <div className="w-48 h-64 bg-gray-100 flex items-center justify-center text-gray-500">
+          Image {index + 1}
         </div>
       )}
     </div>
   );
-};
+}
 
 // Main DraggableStack component
-export default function DraggableStack({ stackImages = [] }) {
-  // State to manage z-index order for bringing items to front
-  const [zIndexOrder, setZIndexOrder] = useState(() =>
-    stackImages.map((_, index) => index + 1)
+export default function DraggableStack({
+  stackImages = [],
+  imagePalettes = [],
+  imagePalette,
+}) {
+  const safeStackImages = stackImages || [];
+  const [maxZIndex, setMaxZIndex] = useState(safeStackImages.length);
+  const cardRefs = useRef([]);
+  const sectionRef = useRef(null);
+  const [scrollProgress, setScrollProgress] = useState(0);
+
+  // Combine colors from multiple palettes or use single palette for backward compatibility
+  const paletteColors = (() => {
+    const allColors = [];
+
+    // If imagePalettes array is provided, use it
+    if (imagePalettes && imagePalettes.length > 0) {
+      imagePalettes.forEach((palette, paletteIndex) => {
+        if (palette) {
+          const colorTypes = [
+            { name: "Dominant", key: "dominant" },
+            { name: "Vibrant", key: "vibrant" },
+            { name: "Light Vibrant", key: "lightVibrant" },
+            { name: "Dark Vibrant", key: "darkVibrant" },
+            { name: "Muted", key: "muted" },
+            { name: "Light Muted", key: "lightMuted" },
+            { name: "Dark Muted", key: "darkMuted" },
+          ];
+
+          colorTypes.forEach(({ name, key }) => {
+            if (palette[key]?.background) {
+              allColors.push({
+                name: `Image ${
+                  paletteIndex === 0 ? 1 : paletteIndex === 1 ? 5 : 9
+                } - ${name}`,
+                color: palette[key].background,
+              });
+            }
+          });
+        }
+      });
+    }
+    // Fall back to single imagePalette for backward compatibility
+    else if (imagePalette) {
+      const colorTypes = [
+        { name: "Dominant", key: "dominant" },
+        { name: "Vibrant", key: "vibrant" },
+        { name: "Light Vibrant", key: "lightVibrant" },
+        { name: "Dark Vibrant", key: "darkVibrant" },
+        { name: "Muted", key: "muted" },
+        { name: "Light Muted", key: "lightMuted" },
+        { name: "Dark Muted", key: "darkMuted" },
+      ];
+
+      colorTypes.forEach(({ name, key }) => {
+        if (imagePalette[key]?.background) {
+          allColors.push({
+            name: name,
+            color: imagePalette[key].background,
+          });
+        }
+      });
+    }
+
+    // Remove duplicates based on color value
+    return allColors.filter(
+      (item, index, self) =>
+        index === self.findIndex((c) => c.color === item.color)
+    );
+  })();
+
+  // Set initial selected color from first available color
+  const [selectedColor, setSelectedColor] = useState(
+    paletteColors[0]?.color || null
   );
 
-  if (!stackImages || stackImages.length === 0) {
-    return null;
-  }
+  // Handle scroll for fade-in effect and image spreading
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!sectionRef.current) return;
 
-  // Function to bring an item to the front
-  const bringToFront = (clickedIndex) => {
-    setZIndexOrder((prevOrder) => {
-      const maxZ = Math.max(...prevOrder);
-      const newOrder = [...prevOrder];
-      newOrder[clickedIndex] = maxZ + 1;
-      return newOrder;
+      const section = sectionRef.current;
+      const rect = section.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+
+      // Calculate visibility percentage
+      const visibleHeight =
+        Math.min(windowHeight, rect.bottom) - Math.max(0, rect.top);
+      const sectionHeight = rect.height;
+      const visibilityPercentage = Math.max(
+        0,
+        Math.min(1, visibleHeight / sectionHeight)
+      );
+
+      // Only change color when 60% of the stack is visible
+      const colorChangeThreshold = 0.6;
+      const shouldChangeColor = visibilityPercentage >= colorChangeThreshold;
+
+      // For spreading effect, use the original progress calculation
+      const scrollStart = windowHeight;
+      const scrollEnd = windowHeight * 0.2;
+      const spreadProgress = Math.max(
+        0,
+        Math.min(1, (scrollStart - rect.top) / (scrollStart - scrollEnd))
+      );
+
+      setScrollProgress(spreadProgress);
+
+      // Store color change state separately
+      if (!sectionRef.current.colorChangeState) {
+        sectionRef.current.colorChangeState = false;
+      }
+
+      if (shouldChangeColor !== sectionRef.current.colorChangeState) {
+        sectionRef.current.colorChangeState = shouldChangeColor;
+        // Trigger color change using the stored selected color
+        const currentColor = sectionRef.current.selectedColor;
+        if (shouldChangeColor && currentColor) {
+          const hex = currentColor.replace("#", "");
+          const r = parseInt(hex.substr(0, 2), 16);
+          const g = parseInt(hex.substr(2, 2), 16);
+          const b = parseInt(hex.substr(4, 2), 16);
+
+          document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+          const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+          document.body.style.color = brightness < 128 ? "white" : "black";
+        } else {
+          document.body.style.backgroundColor = "";
+          document.body.style.color = "";
+        }
+      }
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll(); // Initial calculation
+
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [selectedColor]);
+
+  // Store selected color for manual color changes
+  useEffect(() => {
+    if (!selectedColor || !sectionRef.current) return;
+
+    // Store the selected color on the ref for the scroll handler to use
+    sectionRef.current.selectedColor = selectedColor;
+  }, [selectedColor]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      document.body.style.backgroundColor = "";
+      document.body.style.color = "";
+    };
+  }, []);
+
+  const handleColorChange = (color) => {
+    setSelectedColor(color);
+
+    // Immediately apply color if we're past the 60% threshold
+    if (sectionRef.current && sectionRef.current.colorChangeState) {
+      const hex = color.replace("#", "");
+      const r = parseInt(hex.substr(0, 2), 16);
+      const g = parseInt(hex.substr(2, 2), 16);
+      const b = parseInt(hex.substr(4, 2), 16);
+
+      document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+      document.body.style.color = brightness < 128 ? "white" : "black";
+    }
+  };
+
+  const handleBringToFront = (imageIndex) => {
+    setMaxZIndex((prev) => prev + 1);
+    if (cardRefs.current[imageIndex]?.current) {
+      cardRefs.current[imageIndex].current.style.zIndex = maxZIndex + 1;
+    }
+  };
+
+  const handleExpand = () => {
+    cardRefs.current.forEach((ref, index) => {
+      if (ref && ref.current) {
+        const gridPosition = getExpandedPosition(index);
+        ref.current.style.transition =
+          "transform 300ms cubic-bezier(.1,.51,.59,.99)";
+        ref.current.style.transform = `translate(${gridPosition.x}px, ${gridPosition.y}px) rotate(0deg)`;
+
+        setTimeout(() => {
+          if (ref.current) ref.current.style.transition = "";
+        }, 700);
+      }
     });
   };
 
+  const handleCollect = () => {
+    cardRefs.current.forEach((ref, index) => {
+      if (ref && ref.current) {
+        const centerPosition = getCollectedPosition(index);
+        const randomRotation =
+          index * 2 - 4 + seededRandom(index * 789) * 10 - 5;
+        ref.current.style.transition =
+          "transform 300ms cubic-bezier(.1,.51,.59,.99)";
+        ref.current.style.transform = `translate(${centerPosition.x}px, ${centerPosition.y}px) rotate(${randomRotation}deg)`;
+
+        setTimeout(() => {
+          if (ref.current) ref.current.style.transition = "";
+        }, 700);
+      }
+    });
+  };
+
+  const getExpandedPosition = (index) => {
+    const cols = Math.ceil(Math.sqrt(safeStackImages.length));
+    const row = Math.floor(index / cols);
+    const col = index % cols;
+    return {
+      x: col * 340 - cols * 100 + 100,
+      y: row * 200 - Math.ceil(safeStackImages.length / cols) * 100 + 100,
+    };
+  };
+
+  const getCollectedPosition = (index) => {
+    return {
+      x: index * 3 + seededRandom(index * 321) * 12 - 6,
+      y: index * 3 + seededRandom(index * 654) * 12 - 6,
+    };
+  };
+
+  if (!safeStackImages || safeStackImages.length === 0) {
+    return null;
+  }
+
+  console.log("color p", paletteColors);
+
   return (
-    <section className="pt-20 min-h-screen overflow-hidden px-4">
-      <div>
-        <h4 className="mb-2 opacity-50 uppercase text-xs">stack</h4>
+    <section
+      ref={sectionRef}
+      className="pt-20 min-h-screen overflow-hidden px-4"
+    >
+      <div
+        style={{
+          transition: "opacity 0.3s ease-out",
+        }}
+      >
+        <h4 className="mb-2 uppercase text-sm">stack</h4>
+
+        {paletteColors.length > 0 && (
+          <div className="mb-4 flex items-center justify-between gap-2">
+            <div className="space-x-2">
+              <button
+                className="text-sm opacity-90 hover:opacity-100 transition-opacity"
+                onClick={handleExpand}
+              >
+                Expand
+              </button>
+              <button
+                className="text-sm opacity-90 hover:opacity-100 transition-opacity"
+                onClick={handleCollect}
+              >
+                Collect
+              </button>
+            </div>
+            <div className="flex gap-1.5">
+              {paletteColors.map((item, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleColorChange(item.color)}
+                  className={`h-4 w-4 transition-transform cursor-pointer ${
+                    selectedColor === item.color
+                      ? "scale-125 ring-1 ring-current"
+                      : ""
+                  }`}
+                  style={{ backgroundColor: item.color }}
+                  title={item.name}
+                  aria-label={`Set background to ${item.name}`}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      <div
-        className="relative w-full h-[120svh] flex flex-col items-center justify-center overflow-visible"
-        style={{ perspective: "1600px" }}
-      >
+      <div className="relative w-full h-[89svh] flex flex-col items-center justify-center overflow-visible">
         <div className="relative w-full h-full flex items-center justify-center">
-          {stackImages.map((item, index) => (
+          {safeStackImages.map((image, index) => (
             <DraggableImage
-              key={`${item._key || index}`}
-              item={item}
+              key={`${image._key || index}`}
+              image={image}
               index={index}
-              onBringToFront={bringToFront}
-              zIndex={zIndexOrder[index]}
+              totalImages={safeStackImages.length}
+              onBringToFront={handleBringToFront}
+              cardRefs={cardRefs}
+              scrollProgress={scrollProgress}
             />
           ))}
         </div>
