@@ -16,6 +16,8 @@ function DraggableImage({
   onBringToFront,
   cardRefs,
   scrollProgress,
+  basePositions,
+  onPositionUpdate,
 }) {
   const imageRef = useRef(null);
   const velocityRef = useRef({ x: 0, y: 0 });
@@ -42,16 +44,15 @@ function DraggableImage({
   const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
   const [zIndex, setZIndex] = useState(totalImages - index);
 
-  // Apply random positioning only after hydration
+  // Use base positions from parent array
   useEffect(() => {
-    const initialX = index * 5 + seededRandom(index * 123) * 30 - 15;
-    const initialY = index * 5 + seededRandom(index * 456) * 30 - 15;
-    const initialRot = index * 2 - 4 + seededRandom(index * 789) * 10 - 5;
-
-    setPosition({ x: initialX, y: initialY });
-    setRotation(initialRot);
-    lastPositionRef.current = { x: initialX, y: initialY };
-  }, [index]);
+    if (basePositions && basePositions[index]) {
+      const basePos = basePositions[index];
+      setPosition({ x: basePos.x, y: basePos.y });
+      setRotation(basePos.rotation);
+      lastPositionRef.current = { x: basePos.x, y: basePos.y };
+    }
+  }, [basePositions, index]);
 
   // Enhanced physics simulation for momentum
   const applyMomentum = () => {
@@ -107,52 +108,9 @@ function DraggableImage({
     velocityRef.current = { x: 0, y: 0 };
     lastTimeRef.current = Date.now();
 
-    // Calculate spread position based on scroll
-    const spreadAmount = scrollProgress * 180;
-    const angle = (index / totalImages) * Math.PI * 2;
-    const spreadX = Math.cos(angle) * spreadAmount;
-    const spreadY = Math.sin(angle) * spreadAmount;
-
-    if (imageRef.current) {
-      imageRef.current.style.transition = "";
-
-      // Check if we have stored base positions from expand/collect
-      const storedBaseX = imageRef.current.dataset.baseX;
-      const storedBaseY = imageRef.current.dataset.baseY;
-      const storedRotation = imageRef.current.dataset.rotation;
-
-      if (storedBaseX && storedBaseY) {
-        // Use stored base positions and subtract current spread
-        const baseX = parseFloat(storedBaseX) - spreadX;
-        const baseY = parseFloat(storedBaseY) - spreadY;
-        const rot = storedRotation ? parseFloat(storedRotation) : rotation;
-        setPosition({ x: baseX, y: baseY });
-        setRotation(rot);
-        setInitialPosition({ x: baseX, y: baseY });
-        lastPositionRef.current = { x: baseX, y: baseY };
-      } else {
-        // Fallback to transform parsing
-        const transform = imageRef.current.style.transform;
-        const match = transform.match(
-          /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
-        );
-        if (match) {
-          const currentX = parseFloat(match[1]) - spreadX;
-          const currentY = parseFloat(match[2]) - spreadY;
-          const currentRotation = parseFloat(match[3]);
-          setPosition({ x: currentX, y: currentY });
-          setRotation(currentRotation);
-          setInitialPosition({ x: currentX, y: currentY });
-          lastPositionRef.current = { x: currentX, y: currentY };
-        } else {
-          setInitialPosition(position);
-          lastPositionRef.current = position;
-        }
-      }
-    } else {
-      setInitialPosition(position);
-      lastPositionRef.current = position;
-    }
+    // Use current position as initial position for dragging
+    setInitialPosition(position);
+    lastPositionRef.current = position;
 
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
@@ -211,52 +169,9 @@ function DraggableImage({
     velocityRef.current = { x: 0, y: 0 };
     lastTimeRef.current = Date.now();
 
-    // Calculate spread position based on scroll
-    const spreadAmount = scrollProgress * 180;
-    const angle = (index / totalImages) * Math.PI * 2;
-    const spreadX = Math.cos(angle) * spreadAmount;
-    const spreadY = Math.sin(angle) * spreadAmount;
-
-    if (imageRef.current) {
-      imageRef.current.style.transition = "";
-
-      // Check if we have stored base positions from expand/collect
-      const storedBaseX = imageRef.current.dataset.baseX;
-      const storedBaseY = imageRef.current.dataset.baseY;
-      const storedRotation = imageRef.current.dataset.rotation;
-
-      if (storedBaseX && storedBaseY) {
-        // Use stored base positions and subtract current spread
-        const baseX = parseFloat(storedBaseX) - spreadX;
-        const baseY = parseFloat(storedBaseY) - spreadY;
-        const rot = storedRotation ? parseFloat(storedRotation) : rotation;
-        setPosition({ x: baseX, y: baseY });
-        setRotation(rot);
-        setInitialPosition({ x: baseX, y: baseY });
-        lastPositionRef.current = { x: baseX, y: baseY };
-      } else {
-        // Fallback to transform parsing
-        const transform = imageRef.current.style.transform;
-        const match = transform.match(
-          /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
-        );
-        if (match) {
-          const currentX = parseFloat(match[1]) - spreadX;
-          const currentY = parseFloat(match[2]) - spreadY;
-          const currentRotation = parseFloat(match[3]);
-          setPosition({ x: currentX, y: currentY });
-          setRotation(currentRotation);
-          setInitialPosition({ x: currentX, y: currentY });
-          lastPositionRef.current = { x: currentX, y: currentY };
-        } else {
-          setInitialPosition(position);
-          lastPositionRef.current = position;
-        }
-      }
-    } else {
-      setInitialPosition(position);
-      lastPositionRef.current = position;
-    }
+    // Use current position as initial position for dragging
+    setInitialPosition(position);
+    lastPositionRef.current = position;
 
     setIsDragging(true);
     setDragStart({ x: touch.clientX, y: touch.clientY });
@@ -384,6 +299,15 @@ export default function DraggableStack({
   const cardRefs = useRef([]);
   const sectionRef = useRef(null);
   const [scrollProgress, setScrollProgress] = useState(0);
+
+  // Array to store base positions for all images
+  const [basePositions, setBasePositions] = useState(() =>
+    safeStackImages.map((_, index) => ({
+      x: index * 5 + seededRandom(index * 123) * 30 - 15,
+      y: index * 5 + seededRandom(index * 456) * 30 - 15,
+      rotation: index * 2 - 4 + seededRandom(index * 789) * 10 - 5,
+    }))
+  );
 
   // Combine colors from multiple palettes or use single palette for backward compatibility
   const paletteColors = (() => {
@@ -552,7 +476,24 @@ export default function DraggableStack({
     }
   };
 
+  const updatePositions = (newPositions) => {
+    setBasePositions(newPositions);
+  };
+
   const handleExpand = () => {
+    const newPositions = safeStackImages.map((_, index) => {
+      const gridPosition = getExpandedPosition(index);
+      return {
+        x: gridPosition.x,
+        y: gridPosition.y,
+        rotation: 0,
+      };
+    });
+
+    // Update the base positions array
+    setBasePositions(newPositions);
+
+    // Apply visual transform
     safeStackImages.forEach((_, index) => {
       const gridPosition = getExpandedPosition(index);
 
@@ -567,10 +508,6 @@ export default function DraggableStack({
         setTimeout(() => {
           if (imageComponent) {
             imageComponent.style.transition = "";
-            // Store the new base position for future calculations
-            imageComponent.dataset.baseX = gridPosition.x;
-            imageComponent.dataset.baseY = gridPosition.y;
-            imageComponent.dataset.rotation = "0";
           }
         }, 700);
       }
@@ -578,6 +515,20 @@ export default function DraggableStack({
   };
 
   const handleCollect = () => {
+    const newPositions = safeStackImages.map((_, index) => {
+      const centerPosition = getCollectedPosition(index);
+      const randomRotation = index * 2 - 4 + seededRandom(index * 789) * 10 - 5;
+      return {
+        x: centerPosition.x,
+        y: centerPosition.y,
+        rotation: randomRotation,
+      };
+    });
+
+    // Update the base positions array
+    setBasePositions(newPositions);
+
+    // Apply visual transform
     safeStackImages.forEach((_, index) => {
       const centerPosition = getCollectedPosition(index);
       const randomRotation = index * 2 - 4 + seededRandom(index * 789) * 10 - 5;
@@ -593,10 +544,6 @@ export default function DraggableStack({
         setTimeout(() => {
           if (imageComponent) {
             imageComponent.style.transition = "";
-            // Store the new base position for future calculations
-            imageComponent.dataset.baseX = centerPosition.x;
-            imageComponent.dataset.baseY = centerPosition.y;
-            imageComponent.dataset.rotation = randomRotation;
           }
         }, 700);
       }
@@ -683,6 +630,8 @@ export default function DraggableStack({
               onBringToFront={handleBringToFront}
               cardRefs={cardRefs}
               scrollProgress={scrollProgress}
+              basePositions={basePositions}
+              onPositionUpdate={updatePositions}
             />
           ))}
         </div>
