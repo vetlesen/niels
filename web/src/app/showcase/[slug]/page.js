@@ -78,9 +78,9 @@ export default function ShowcasePage({ params, searchParams }) {
 
   if (!showcase) {
     return (
-      <main className="px-4 py-8">
+      <main className="px-4 mt-52 min-h-[60svh]">
         <p>Showcase not found</p>
-        <Link href="/" className="underline">
+        <Link href="/" className="underline font-normal">
           Back to home
         </Link>
       </main>
@@ -159,7 +159,7 @@ export default function ShowcasePage({ params, searchParams }) {
       </article>
       {/* Works Display */}
       {showcase.works && showcase.works.length > 0 ? (
-        <Work work={showcase.works} />
+        <Work work={showcase.works} isShowcase={true} />
       ) : (
         <div className="px-4 py-8">
           <p className="text-gray-500">No works in this showcase yet.</p>

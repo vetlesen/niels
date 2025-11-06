@@ -57,14 +57,14 @@ export default function PasswordPage({ params }) {
           value={passwordInput}
           onChange={(e) => setPasswordInput(e.target.value)}
           placeholder="Enter password"
-          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-gray-500"
+          className="w-full px-3 py-2 border border-gray-300 focus:outline-none focus:border-gray-500"
           autoFocus
           disabled={loading}
         />
         {error && <p className="text-red-500 text-sm">{error}</p>}
         <button
           type="submit"
-          className="w-full px-4 py-2 bg-black text-white rounded hover:bg-gray-800 disabled:opacity-50"
+          className="w-full px-4 py-2 bg-black text-white hover:bg-gray-800 disabled:opacity-50"
           disabled={loading}
         >
           {loading ? "Verifying..." : "Unlock"}

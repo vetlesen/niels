@@ -23,6 +23,7 @@ function ThumbnailWrapper({
   setHoveredThumbnail,
   index,
   aspectRatio,
+  isShowcase,
 }) {
   const [isVisible, setIsVisible] = useState(false);
   const [shouldLoad, setShouldLoad] = useState(false);
@@ -96,7 +97,11 @@ function ThumbnailWrapper({
           <VideoThumbnail
             playbackId={playbackId}
             timestamp={thumbnail.timestamp}
-            isHovered={hoveredWork === itemId && itemCategory === activeFilter}
+            isHovered={
+              isShowcase
+                ? hoveredWork === itemId
+                : hoveredWork === itemId && itemCategory === activeFilter
+            }
             className="w-[120px] h-auto 2xl:w-[8vw]"
             style={{ aspectRatio: cssAspectRatio }}
           />
@@ -118,6 +123,7 @@ function WorkItem({
   hoveredWork,
   setHoveredThumbnail,
   itemIndex,
+  isShowcase,
 }) {
   const { activeFilter } = useTheme();
   const [isVisible, setIsVisible] = useState(false);
@@ -161,7 +167,7 @@ function WorkItem({
     return () => clearTimeout(timeout);
   }, [isVisible, itemIndex]);
 
-  const isHighlighted = item.category === activeFilter;
+  const isHighlighted = isShowcase ? true : item.category === activeFilter;
 
   return (
     <div
@@ -188,7 +194,9 @@ function WorkItem({
           <div className={`flex flex-row space-x-2 px-2 pb-2`}>
             <h3
               className={`transition-colors duration-500 ease-in-out ${
-                activeFilter === "narrative"
+                isShowcase
+                  ? "text-gray-900"
+                  : activeFilter === "narrative"
                   ? "text-white"
                   : activeFilter === "commercial"
                   ? ""
@@ -200,7 +208,9 @@ function WorkItem({
             {item.title && (
               <h4
                 className={`transition-colors duration-500 ease-in-out font-normal ${
-                  activeFilter === "narrative"
+                  isShowcase
+                    ? "text-gray-900"
+                    : activeFilter === "narrative"
                     ? "text-white"
                     : activeFilter === "commercial"
                     ? " "
@@ -213,7 +223,9 @@ function WorkItem({
             {item.type && (
               <p
                 className={`opacity-60 transition-colors duration-500 ease-in-out font-normal ${
-                  activeFilter === "narrative"
+                  isShowcase
+                    ? "text-gray-900"
+                    : activeFilter === "narrative"
                     ? "text-white"
                     : activeFilter === "commercial"
                     ? " "
@@ -226,7 +238,9 @@ function WorkItem({
             {item.year && (
               <p
                 className={`opacity-60 transition-colors duration-500 ease-in-out font-normal ${
-                  activeFilter === "narrative"
+                  isShowcase
+                    ? "text-gray-900"
+                    : activeFilter === "narrative"
                     ? "text-white"
                     : activeFilter === "commercial"
                     ? ""
@@ -238,7 +252,9 @@ function WorkItem({
             )}
             <p
               className={`opacity-60 transition-colors duration-500 ease-in-out font-normal ${
-                activeFilter === "narrative"
+                isShowcase
+                  ? "text-gray-900"
+                  : activeFilter === "narrative"
                   ? "text-white"
                   : activeFilter === "commercial"
                   ? ""
@@ -251,7 +267,11 @@ function WorkItem({
           {item.video?.asset?.playbackId && item.thumbnails && (
             <div
               className={`flex gap-2 bg-black p-2 overflow-x-auto ${
-                item.category !== activeFilter ? "bg-yellow" : ""
+                isShowcase
+                  ? ""
+                  : item.category !== activeFilter
+                  ? "bg-yellow"
+                  : ""
               }`}
             >
               {item.thumbnails.map((thumbnail, index) => {
@@ -270,6 +290,7 @@ function WorkItem({
                     setHoveredThumbnail={setHoveredThumbnail}
                     index={index}
                     aspectRatio={item.video.asset.data?.aspect_ratio}
+                    isShowcase={isShowcase}
                   />
                 );
               })}
@@ -298,7 +319,7 @@ function WorkItem({
   );
 }
 
-export default function Work({ work }) {
+export default function Work({ work, isShowcase = false }) {
   const [hoveredWork, setHoveredWork] = useState(null);
   const [hoveredThumbnail, setHoveredThumbnail] = useState(null);
   const { activeFilter } = useTheme();
@@ -318,6 +339,7 @@ export default function Work({ work }) {
               onMouseLeave={setHoveredWork}
               hoveredWork={hoveredWork}
               setHoveredThumbnail={setHoveredThumbnail}
+              isShowcase={isShowcase}
             />
           ))}
         </>
