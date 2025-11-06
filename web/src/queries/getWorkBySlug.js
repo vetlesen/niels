@@ -9,6 +9,8 @@ export async function getWorkBySlug(slug) {
     type,
     year,
     category,
+    hidden,
+    password,
     video {
       asset-> {
         _id,

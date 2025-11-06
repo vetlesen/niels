@@ -172,7 +172,11 @@ function WorkItem({
     >
       {shouldRender ? (
         <Link
-          href={`/work/${item.slug?.current}`}
+          href={
+            item.hidden && item.password
+              ? `/work/${item.slug?.current}/password`
+              : `/work/${item.slug?.current}`
+          }
           className={`group flex flex-col rounded duration-100 ease-in-out ${
             isHighlighted
               ? "cursor-pointer opacity-100"

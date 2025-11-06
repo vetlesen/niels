@@ -1,7 +1,7 @@
 import { client } from "../lib/client";
 
 export async function getWork() {
-  const query = `*[_type == "work"] | order(orderRank) {
+  const query = `*[_type == "work" && hidden != true] | order(orderRank) {
     _id,
     name,
     slug,
@@ -9,6 +9,7 @@ export async function getWork() {
     type,
     year,
     category,
+    hidden,
     video {
       asset-> {
         _id,

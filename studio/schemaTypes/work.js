@@ -40,6 +40,22 @@ export default {
       },
     },
     {
+      name: "hidden",
+      title: "Hidden on frontpage",
+      description:
+        "Work can still be in a showcase if its a new movie that is yet not released",
+      type: "boolean",
+      default: false,
+    },
+    {
+      name: "password",
+      title: "Password",
+      description:
+        "Password required to view this work when it's hidden. Only applies when 'Hidden on frontpage' is true.",
+      type: "string",
+      hidden: ({ document }) => !document?.hidden,
+    },
+    {
       name: "title",
       title: "Title",
       type: "string",
