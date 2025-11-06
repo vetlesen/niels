@@ -115,21 +115,39 @@ function DraggableImage({
 
     if (imageRef.current) {
       imageRef.current.style.transition = "";
-      const transform = imageRef.current.style.transform;
-      const match = transform.match(
-        /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
-      );
-      if (match) {
-        const currentX = parseFloat(match[1]) - spreadX;
-        const currentY = parseFloat(match[2]) - spreadY;
-        const currentRotation = parseFloat(match[3]);
-        setPosition({ x: currentX, y: currentY });
-        setRotation(currentRotation);
-        setInitialPosition({ x: currentX, y: currentY });
-        lastPositionRef.current = { x: currentX, y: currentY };
+
+      // Check if we have stored base positions from expand/collect
+      const storedBaseX = imageRef.current.dataset.baseX;
+      const storedBaseY = imageRef.current.dataset.baseY;
+      const storedRotation = imageRef.current.dataset.rotation;
+
+      if (storedBaseX && storedBaseY) {
+        // Use stored base positions and subtract current spread
+        const baseX = parseFloat(storedBaseX) - spreadX;
+        const baseY = parseFloat(storedBaseY) - spreadY;
+        const rot = storedRotation ? parseFloat(storedRotation) : rotation;
+        setPosition({ x: baseX, y: baseY });
+        setRotation(rot);
+        setInitialPosition({ x: baseX, y: baseY });
+        lastPositionRef.current = { x: baseX, y: baseY };
       } else {
-        setInitialPosition(position);
-        lastPositionRef.current = position;
+        // Fallback to transform parsing
+        const transform = imageRef.current.style.transform;
+        const match = transform.match(
+          /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
+        );
+        if (match) {
+          const currentX = parseFloat(match[1]) - spreadX;
+          const currentY = parseFloat(match[2]) - spreadY;
+          const currentRotation = parseFloat(match[3]);
+          setPosition({ x: currentX, y: currentY });
+          setRotation(currentRotation);
+          setInitialPosition({ x: currentX, y: currentY });
+          lastPositionRef.current = { x: currentX, y: currentY };
+        } else {
+          setInitialPosition(position);
+          lastPositionRef.current = position;
+        }
       }
     } else {
       setInitialPosition(position);
@@ -201,21 +219,39 @@ function DraggableImage({
 
     if (imageRef.current) {
       imageRef.current.style.transition = "";
-      const transform = imageRef.current.style.transform;
-      const match = transform.match(
-        /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
-      );
-      if (match) {
-        const currentX = parseFloat(match[1]) - spreadX;
-        const currentY = parseFloat(match[2]) - spreadY;
-        const currentRotation = parseFloat(match[3]);
-        setPosition({ x: currentX, y: currentY });
-        setRotation(currentRotation);
-        setInitialPosition({ x: currentX, y: currentY });
-        lastPositionRef.current = { x: currentX, y: currentY };
+
+      // Check if we have stored base positions from expand/collect
+      const storedBaseX = imageRef.current.dataset.baseX;
+      const storedBaseY = imageRef.current.dataset.baseY;
+      const storedRotation = imageRef.current.dataset.rotation;
+
+      if (storedBaseX && storedBaseY) {
+        // Use stored base positions and subtract current spread
+        const baseX = parseFloat(storedBaseX) - spreadX;
+        const baseY = parseFloat(storedBaseY) - spreadY;
+        const rot = storedRotation ? parseFloat(storedRotation) : rotation;
+        setPosition({ x: baseX, y: baseY });
+        setRotation(rot);
+        setInitialPosition({ x: baseX, y: baseY });
+        lastPositionRef.current = { x: baseX, y: baseY };
       } else {
-        setInitialPosition(position);
-        lastPositionRef.current = position;
+        // Fallback to transform parsing
+        const transform = imageRef.current.style.transform;
+        const match = transform.match(
+          /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
+        );
+        if (match) {
+          const currentX = parseFloat(match[1]) - spreadX;
+          const currentY = parseFloat(match[2]) - spreadY;
+          const currentRotation = parseFloat(match[3]);
+          setPosition({ x: currentX, y: currentY });
+          setRotation(currentRotation);
+          setInitialPosition({ x: currentX, y: currentY });
+          lastPositionRef.current = { x: currentX, y: currentY };
+        } else {
+          setInitialPosition(position);
+          lastPositionRef.current = position;
+        }
       }
     } else {
       setInitialPosition(position);
@@ -322,8 +358,8 @@ function DraggableImage({
           className="pointer-events-none block"
           draggable={false}
           style={{
-            maxWidth: "300px",
-            maxHeight: "400px",
+            maxWidth: "200px",
+            maxHeight: "300px",
             width: "auto",
             height: "auto",
           }}
@@ -517,32 +553,51 @@ export default function DraggableStack({
   };
 
   const handleExpand = () => {
-    cardRefs.current.forEach((ref, index) => {
-      if (ref && ref.current) {
-        const gridPosition = getExpandedPosition(index);
-        ref.current.style.transition =
-          "transform 300ms cubic-bezier(.1,.51,.59,.99)";
-        ref.current.style.transform = `translate(${gridPosition.x}px, ${gridPosition.y}px) rotate(0deg)`;
+    safeStackImages.forEach((_, index) => {
+      const gridPosition = getExpandedPosition(index);
+
+      if (cardRefs.current[index]?.current) {
+        const imageComponent = cardRefs.current[index].current;
+
+        // Apply transform immediately
+        imageComponent.style.transition =
+          "transform 700ms cubic-bezier(0.34, 1.56, 0.64, 1)";
+        imageComponent.style.transform = `translate(${gridPosition.x}px, ${gridPosition.y}px) rotate(0deg)`;
 
         setTimeout(() => {
-          if (ref.current) ref.current.style.transition = "";
+          if (imageComponent) {
+            imageComponent.style.transition = "";
+            // Store the new base position for future calculations
+            imageComponent.dataset.baseX = gridPosition.x;
+            imageComponent.dataset.baseY = gridPosition.y;
+            imageComponent.dataset.rotation = "0";
+          }
         }, 700);
       }
     });
   };
 
   const handleCollect = () => {
-    cardRefs.current.forEach((ref, index) => {
-      if (ref && ref.current) {
-        const centerPosition = getCollectedPosition(index);
-        const randomRotation =
-          index * 2 - 4 + seededRandom(index * 789) * 10 - 5;
-        ref.current.style.transition =
-          "transform 300ms cubic-bezier(.1,.51,.59,.99)";
-        ref.current.style.transform = `translate(${centerPosition.x}px, ${centerPosition.y}px) rotate(${randomRotation}deg)`;
+    safeStackImages.forEach((_, index) => {
+      const centerPosition = getCollectedPosition(index);
+      const randomRotation = index * 2 - 4 + seededRandom(index * 789) * 10 - 5;
+
+      if (cardRefs.current[index]?.current) {
+        const imageComponent = cardRefs.current[index].current;
+
+        // Apply transform immediately
+        imageComponent.style.transition =
+          "transform 700ms cubic-bezier(0.34, 1.56, 0.64, 1)";
+        imageComponent.style.transform = `translate(${centerPosition.x}px, ${centerPosition.y}px) rotate(${randomRotation}deg)`;
 
         setTimeout(() => {
-          if (ref.current) ref.current.style.transition = "";
+          if (imageComponent) {
+            imageComponent.style.transition = "";
+            // Store the new base position for future calculations
+            imageComponent.dataset.baseX = centerPosition.x;
+            imageComponent.dataset.baseY = centerPosition.y;
+            imageComponent.dataset.rotation = randomRotation;
+          }
         }, 700);
       }
     });
@@ -553,7 +608,7 @@ export default function DraggableStack({
     const row = Math.floor(index / cols);
     const col = index % cols;
     return {
-      x: col * 340 - cols * 100 + 100,
+      x: col * 200 - cols * 100 + 100,
       y: row * 200 - Math.ceil(safeStackImages.length / cols) * 100 + 100,
     };
   };
@@ -568,8 +623,6 @@ export default function DraggableStack({
   if (!safeStackImages || safeStackImages.length === 0) {
     return null;
   }
-
-  console.log("color p", paletteColors);
 
   return (
     <section
