@@ -64,28 +64,31 @@ export default async function WorkDetail({ params }) {
 
   return (
     <main className="">
-      <div className="pt-10">
-        {/* Video */}
-        {work.video?.asset?.playbackId && (
-          <div className="mb-8 px-4 grid grid-cols-12">
+      <div className="pt-4">
+        {" "}
+        <div
+          className="mb-2 px-4 max-h-[90svh]"
+          style={{
+            aspectRatio: work.video.asset.data?.aspect_ratio?.replace(":", "/"),
+          }}
+        >
+          {/* Video */}
+          {work.video?.asset?.playbackId && (
             <ClientMuxPlayer
               playbackId={work.video.asset.playbackId}
-              aspectRatio="16:9"
               controls
-              className="col-span-12"
-              style={{ width: "100%" }}
+              className="w-full"
+              aspectRatio={work.video.asset.data?.aspect_ratio}
             />
-          </div>
-        )}
-
+          )}
+        </div>
         {/* Work Details */}
-        <div className="mb-8 px-4">
+        <div className="mb-12 px-4">
           <h1 className="">{work.name}</h1>
           <h2 className="font-normal">{work.title}</h2>
           <p className="font-normal">{work.type}</p>
           <p className="font-normal">{work.year}</p>
         </div>
-
         <div className="w-full grid grid-cols-1 md:grid-cols-2 px-4">
           {/* Credits */}
           {work.credits && work.credits.length > 0 && (

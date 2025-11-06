@@ -14,8 +14,11 @@ export async function getWorkBySlug(slug) {
         _id,
         playbackId,
         assetId,
-        status
-      }
+        status,
+        data {
+          aspect_ratio,
+        },
+      },
     },
     credits[] {
       role,

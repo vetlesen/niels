@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTheme } from "@/contexts/ThemeContext";
 import VideoThumbnail from "./VideoThumbnail";
 
 // Deterministic pseudo-random function based on seed
@@ -372,6 +373,7 @@ export default function DraggableStack({
   imagePalettes = [],
   imagePalette,
 }) {
+  const { setBackgroundColor } = useTheme();
   const safeStackImages = stackImages || [];
   const [maxZIndex, setMaxZIndex] = useState(safeStackImages.length);
   const cardRefs = useRef([]);
@@ -473,9 +475,11 @@ export default function DraggableStack({
         Math.min(1, visibleHeight / sectionHeight)
       );
 
-      // Only change color when 60% of the stack is visible
+      // Only change color when 60% of the stack is visible AND user has scrolled into the section
       const colorChangeThreshold = 0.6;
-      const shouldChangeColor = visibilityPercentage >= colorChangeThreshold;
+      const isScrolledIntoSection = rect.top < windowHeight;
+      const shouldChangeColor =
+        visibilityPercentage >= colorChangeThreshold && isScrolledIntoSection;
 
       // For spreading effect, use the original progress calculation
       const scrollStart = windowHeight;
@@ -497,17 +501,9 @@ export default function DraggableStack({
         // Trigger color change using the stored selected color
         const currentColor = sectionRef.current.selectedColor;
         if (shouldChangeColor && currentColor) {
-          const hex = currentColor.replace("#", "");
-          const r = parseInt(hex.substr(0, 2), 16);
-          const g = parseInt(hex.substr(2, 2), 16);
-          const b = parseInt(hex.substr(4, 2), 16);
-
-          document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-          const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-          document.body.style.color = brightness < 128 ? "white" : "black";
+          setBackgroundColor(currentColor);
         } else {
-          document.body.style.backgroundColor = "";
-          document.body.style.color = "";
+          setBackgroundColor(null);
         }
       }
     };
@@ -516,7 +512,7 @@ export default function DraggableStack({
     handleScroll(); // Initial calculation
 
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [selectedColor]);
+  }, [selectedColor, setBackgroundColor]);
 
   // Store selected color for manual color changes
   useEffect(() => {
@@ -536,17 +532,26 @@ export default function DraggableStack({
 
   const handleColorChange = (color) => {
     setSelectedColor(color);
+    // Only apply background color if 60% of stack is visible and user has scrolled into section
+    if (sectionRef.current) {
+      const rect = sectionRef.current.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      const visibleHeight =
+        Math.min(windowHeight, rect.bottom) - Math.max(0, rect.top);
+      const sectionHeight = rect.height;
+      const visibilityPercentage = Math.max(
+        0,
+        Math.min(1, visibleHeight / sectionHeight)
+      );
+      const isScrolledIntoSection = rect.top < windowHeight;
+      const colorChangeThreshold = 0.6;
 
-    // Immediately apply color if we're past the 60% threshold
-    if (sectionRef.current && sectionRef.current.colorChangeState) {
-      const hex = color.replace("#", "");
-      const r = parseInt(hex.substr(0, 2), 16);
-      const g = parseInt(hex.substr(2, 2), 16);
-      const b = parseInt(hex.substr(4, 2), 16);
-
-      document.body.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
-      const brightness = (r * 299 + g * 587 + b * 114) / 1000;
-      document.body.style.color = brightness < 128 ? "white" : "black";
+      if (
+        visibilityPercentage >= colorChangeThreshold &&
+        isScrolledIntoSection
+      ) {
+        setBackgroundColor(color);
+      }
     }
   };
 
@@ -655,21 +660,15 @@ export default function DraggableStack({
   return (
     <>
       <div
-        className="w-full sticky top-0 pt-4 z-50 mt-20"
+        className="w-full sticky top-0 pt-4 z-50 mt-20 transition-colors duration-300 ease-in-out"
         style={{
           backgroundColor:
             sectionRef.current?.colorChangeState && selectedColor
               ? selectedColor
-              : "transparent",
-          transition: "background-color 1s ease-out",
+              : "#202020",
         }}
       >
-        <div
-          className="grid grid-cols-12 mx-4 border-b pb-4"
-          style={{
-            transition: "opacity 0.3s ease-out",
-          }}
-        >
+        <div className="grid grid-cols-12 mx-4 border-b pb-4">
           <h4 className="uppercase text-sm col-span-3 md:col-span-3">stack</h4>
           <div className="col-span-4 md:col-span-3 space-x-4 flex justify-start">
             <button
@@ -693,10 +692,10 @@ export default function DraggableStack({
                   <button
                     key={index}
                     onClick={() => handleColorChange(item.color)}
-                    className={`h-4 w-4 transition-transform cursor-pointer ${
+                    className={`h-4 transition-all duration-300 cursor-pointer ${
                       selectedColor === item.color
-                        ? "scale-125 ring-1 ring-current"
-                        : ""
+                        ? "w-16 ring-1 ring-current"
+                        : "w-4"
                     }`}
                     style={{ backgroundColor: item.color }}
                     title={item.name}
@@ -734,7 +733,7 @@ export default function DraggableStack({
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 p-2 bg-white border border-gray-200 rounded shadow-lg z-50">
+                  <div className="absolute top-full left-0 mt-4 p-2 z-50">
                     <div className="flex flex-col gap-1 w-[80px]">
                       {paletteColors.map((item, index) => (
                         <button

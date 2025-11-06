@@ -12,6 +12,7 @@ export default function ClientMuxPlayer({
   preload = "metadata",
   className = "",
   style = {},
+  aspectRatio = null,
   ...props
 }) {
   const [isLoaded, setIsLoaded] = useState(false);
@@ -22,6 +23,9 @@ export default function ClientMuxPlayer({
   const [isHovering, setIsHovering] = useState(false);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
   const [isMuted, setIsMuted] = useState(true);
+  const [videoAspectRatio, setVideoAspectRatio] = useState(
+    aspectRatio || "16/9"
+  );
   const playerRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -50,6 +54,14 @@ export default function ClientMuxPlayer({
   const handleCanPlay = () => {
     setIsLoaded(true);
     setError(null);
+    // Get video dimensions from the player element
+    if (playerRef.current) {
+      const videoElement = playerRef.current.querySelector("video");
+      if (videoElement && videoElement.videoWidth && videoElement.videoHeight) {
+        const ratio = videoElement.videoWidth / videoElement.videoHeight;
+        setVideoAspectRatio(ratio.toString());
+      }
+    }
   };
 
   const handlePlay = () => {
@@ -119,7 +131,7 @@ export default function ClientMuxPlayer({
     <div
       ref={containerRef}
       className={`client-mux-player relative ${className}`}
-      style={{ width: "100%", aspectRatio: "16/9", ...style }}
+      style={{ width: "100%", aspectRatio: videoAspectRatio, ...style }}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
     >
@@ -141,9 +153,7 @@ export default function ClientMuxPlayer({
       )}
 
       {/* Loading placeholder */}
-      {!error && !isLoaded && (
-        <div className="absolute inset-0" style={{ aspectRatio: "16/9" }}></div>
-      )}
+      {!error && !isLoaded && <div className="absolute inset-0"></div>}
 
       {/* MuxPlayer */}
       {!error && (
@@ -164,7 +174,6 @@ export default function ClientMuxPlayer({
           className={`custom-player ${!hasUserInteracted ? "no-controls" : ""}`}
           style={{
             width: "100%",
-            aspectRatio: "16/9",
             opacity: isLoaded ? 1 : 0,
             transition: "opacity 0.5s ease-in-out",
           }}

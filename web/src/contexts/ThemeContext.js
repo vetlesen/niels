@@ -44,7 +44,7 @@ export function ThemeProvider({ children }) {
     if (customColor) {
       // Use custom color from image palette
       document.body.style.backgroundColor = customColor;
-      document.body.className = "transition-all duration-500 ease-in-out";
+      document.body.className = "transition-colors duration-300 ease-in-out";
 
       // Determine text color based on background brightness
       const textColor = isColorDark(customColor) ? "white" : "black";
@@ -54,25 +54,26 @@ export function ThemeProvider({ children }) {
       document.body.style.backgroundColor = "";
       document.body.style.color = "";
       document.body.className =
-        "bg-white transition-all duration-500 ease-in-out";
+        "bg-white transition-colors duration-300 ease-in-out";
     } else if (isWorkPage) {
       // Work pages always have #202020 background
       document.body.style.backgroundColor = "";
       document.body.style.color = "";
       document.body.className =
-        "bg-[#202020] text-white transition-all duration-500 ease-in-out";
+        "bg-[#202020] text-white transition-colors duration-300 ease-in-out";
     } else if (activeFilter === "narrative") {
       document.body.style.backgroundColor = "";
       document.body.style.color = "";
       document.body.className =
-        "bg-[#202020] text-white transition-all duration-500 ease-in-out";
+        "bg-[#202020] text-white transition-colors duration-300 ease-in-out";
     } else if (activeFilter === "commercial") {
       document.body.style.backgroundColor = "";
       document.body.style.color = "";
       document.body.className =
-        "bg-white transition-all duration-500 ease-in-out";
+        "bg-white transition-colors duration-300 ease-in-out";
     }
 
+    // Force reflow to ensure transition is applied
     document.body.offsetHeight;
   }, [activeFilter, customColor, pathname]);
 
