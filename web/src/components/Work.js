@@ -1,92 +1,15 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import MuxPlayer from "@mux/mux-player-react";
 import { useTheme } from "../contexts/ThemeContext";
 import Image from "next/image";
+import VideoThumbnail from "./VideoThumbnail";
 
 function formatDuration(seconds) {
   if (!seconds) return "";
   const minutes = Math.floor(seconds / 60);
   const remainingSeconds = Math.floor(seconds % 60);
   return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
-}
-
-function VideoThumbnail({
-  playbackId,
-  timestamp,
-  isHovered,
-  className,
-  style,
-}) {
-  const playerRef = useRef(null);
-  const playPromiseRef = useRef(null);
-
-  useEffect(() => {
-    const player = playerRef.current;
-    if (!player) return;
-
-    const handlePlayback = async () => {
-      try {
-        if (playPromiseRef.current) {
-          try {
-            await playPromiseRef.current;
-          } catch (error) {
-            // Ignore errors from cancelled promises
-          }
-          playPromiseRef.current = null;
-        }
-
-        if (isHovered) {
-          try {
-            playPromiseRef.current = player.play();
-            if (playPromiseRef.current) {
-              await playPromiseRef.current;
-            }
-          } catch (error) {
-            if (
-              error.name !== "AbortError" &&
-              error.name !== "NotAllowedError"
-            ) {
-              console.warn("Video play error:", error);
-            }
-          }
-        } else {
-          try {
-            player.pause();
-            player.currentTime = timestamp
-              .split(":")
-              .reduce((acc, time) => 60 * acc + +time);
-          } catch (error) {
-            console.warn("Video pause error:", error);
-          }
-        }
-      } catch (error) {
-        console.warn("Video playback error:", error);
-      }
-    };
-
-    const timeoutId = setTimeout(handlePlayback, 50);
-    return () => clearTimeout(timeoutId);
-  }, [isHovered, timestamp]);
-
-  return (
-    <MuxPlayer
-      ref={playerRef}
-      src={`https://stream.mux.com/${playbackId}.m3u8?max_resolution=270p`}
-      poster={`https://image.mux.com/${playbackId}/thumbnail.jpg?time=${timestamp
-        .split(":")
-        .reduce((acc, time) => 60 * acc + +time)}`}
-      muted
-      loop
-      playsInline
-      preload="none"
-      startTime={timestamp.split(":").reduce((acc, time) => 60 * acc + +time)}
-      endTime={timestamp.split(":").reduce((acc, time) => 60 * acc + +time) + 5}
-      className={`thumbnail ${className || ""}`}
-      style={style}
-    />
-  );
 }
 
 function ThumbnailWrapper({

@@ -48,9 +48,13 @@ export async function getWorkBySlug(slug) {
     },
     stack[] {
       _key,
+      _type,
       asset-> {
         _id,
         url,
+        playbackId,
+        assetId,
+        status,
         metadata {
           dimensions {
             width,

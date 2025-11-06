@@ -200,6 +200,11 @@ export default {
           title: "image",
           type: "image",
         },
+        {
+          name: "video",
+          title: "video",
+          type: "mux.video",
+        },
       ],
     },
   ],

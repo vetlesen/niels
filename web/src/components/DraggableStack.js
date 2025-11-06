@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import VideoThumbnail from "./VideoThumbnail";
 
 // Deterministic pseudo-random function based on seed
 function seededRandom(seed) {
@@ -10,7 +11,7 @@ function seededRandom(seed) {
 
 // Individual draggable image component
 function DraggableImage({
-  image,
+  item,
   index,
   totalImages,
   onBringToFront,
@@ -301,10 +302,25 @@ function DraggableImage({
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
     >
-      {image?.asset?.url ? (
+      {item?._type === "video" && item?.asset?.playbackId ? (
+        <VideoThumbnail
+          playbackId={item.asset.playbackId}
+          timestamp="0:00"
+          isHovered={true}
+          maxResolution="360p"
+          loopDuration={999999}
+          className="pointer-events-none"
+          style={{
+            maxWidth: "300px",
+            maxHeight: "400px",
+            width: "300px",
+            height: "auto",
+          }}
+        />
+      ) : item?.asset?.url ? (
         <img
-          src={image.asset.url}
-          alt={`Stack image ${index + 1}`}
+          src={item.asset.url}
+          alt={`Stack item ${index + 1}`}
           className="pointer-events-none block"
           draggable={false}
           style={{
@@ -316,7 +332,7 @@ function DraggableImage({
         />
       ) : (
         <div className="w-48 h-64 bg-gray-100 flex items-center justify-center text-gray-500">
-          Image {index + 1}
+          Item {index + 1}
         </div>
       )}
     </div>
@@ -601,10 +617,10 @@ export default function DraggableStack({
 
       <div className="relative w-full h-[89svh] flex flex-col items-center justify-center overflow-visible">
         <div className="relative w-full h-full flex items-center justify-center">
-          {safeStackImages.map((image, index) => (
+          {safeStackImages.map((item, index) => (
             <DraggableImage
-              key={`${image._key || index}`}
-              image={image}
+              key={`${item._key || index}`}
+              item={item}
               index={index}
               totalImages={safeStackImages.length}
               onBringToFront={handleBringToFront}
