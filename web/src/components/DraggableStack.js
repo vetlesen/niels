@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import VideoThumbnail from "./VideoThumbnail";
 
 // Deterministic pseudo-random function based on seed
 function seededRandom(seed) {
@@ -108,9 +109,34 @@ function DraggableImage({
     velocityRef.current = { x: 0, y: 0 };
     lastTimeRef.current = Date.now();
 
-    // Use current position as initial position for dragging
-    setInitialPosition(position);
-    lastPositionRef.current = position;
+    // Calculate spread position based on scroll
+    const spreadAmount = scrollProgress * 180;
+    const angle = (index / totalImages) * Math.PI * 2;
+    const spreadX = Math.cos(angle) * spreadAmount;
+    const spreadY = Math.sin(angle) * spreadAmount;
+
+    // Get the current visual position from the transform
+    if (imageRef.current) {
+      const transform = imageRef.current.style.transform;
+      const match = transform.match(
+        /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
+      );
+      if (match) {
+        const currentX = parseFloat(match[1]) - spreadX;
+        const currentY = parseFloat(match[2]) - spreadY;
+        const currentRotation = parseFloat(match[3]);
+        setPosition({ x: currentX, y: currentY });
+        setRotation(currentRotation);
+        setInitialPosition({ x: currentX, y: currentY });
+        lastPositionRef.current = { x: currentX, y: currentY };
+      } else {
+        setInitialPosition(position);
+        lastPositionRef.current = position;
+      }
+    } else {
+      setInitialPosition(position);
+      lastPositionRef.current = position;
+    }
 
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
@@ -169,9 +195,34 @@ function DraggableImage({
     velocityRef.current = { x: 0, y: 0 };
     lastTimeRef.current = Date.now();
 
-    // Use current position as initial position for dragging
-    setInitialPosition(position);
-    lastPositionRef.current = position;
+    // Calculate spread position based on scroll
+    const spreadAmount = scrollProgress * 180;
+    const angle = (index / totalImages) * Math.PI * 2;
+    const spreadX = Math.cos(angle) * spreadAmount;
+    const spreadY = Math.sin(angle) * spreadAmount;
+
+    // Get the current visual position from the transform
+    if (imageRef.current) {
+      const transform = imageRef.current.style.transform;
+      const match = transform.match(
+        /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
+      );
+      if (match) {
+        const currentX = parseFloat(match[1]) - spreadX;
+        const currentY = parseFloat(match[2]) - spreadY;
+        const currentRotation = parseFloat(match[3]);
+        setPosition({ x: currentX, y: currentY });
+        setRotation(currentRotation);
+        setInitialPosition({ x: currentX, y: currentY });
+        lastPositionRef.current = { x: currentX, y: currentY };
+      } else {
+        setInitialPosition(position);
+        lastPositionRef.current = position;
+      }
+    } else {
+      setInitialPosition(position);
+      lastPositionRef.current = position;
+    }
 
     setIsDragging(true);
     setDragStart({ x: touch.clientX, y: touch.clientY });
@@ -279,9 +330,24 @@ function DraggableImage({
             height: "auto",
           }}
         />
+      ) : image?.asset?.playbackId ? (
+        <VideoThumbnail
+          playbackId={image.asset.playbackId}
+          timestamp={image.timestamp || "0:00"}
+          isHovered={isDragging}
+          className="pointer-events-none block"
+          style={{
+            maxWidth: "200px",
+            maxHeight: "300px",
+            width: "auto",
+            height: "auto",
+          }}
+          maxResolution="270p"
+          loopDuration={5}
+        />
       ) : (
         <div className="w-48 h-64 bg-gray-100 flex items-center justify-center text-gray-500">
-          Image {index + 1}
+          Item {index + 1}
         </div>
       )}
     </div>
