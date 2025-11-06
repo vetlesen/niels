@@ -91,3 +91,13 @@
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
+
+.custom-player {
+  --center-controls: none;
+  --live-button: none;
+  --seek-backward-button: none;
+  --seek-forward-button: none;
+  --rendition-menu-button: none;
+  --playback-rate-button: none;
+  --pip-button: none;
+}

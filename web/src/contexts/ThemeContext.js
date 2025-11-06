@@ -38,6 +38,9 @@ export function ThemeProvider({ children }) {
     // Apply theme classes to body using Tailwind
     document.body.className = "";
 
+    const isWorkPage = pathname.startsWith("/work/");
+    const isAboutPage = pathname === "/about";
+
     if (customColor) {
       // Use custom color from image palette
       document.body.style.backgroundColor = customColor;
@@ -46,6 +49,18 @@ export function ThemeProvider({ children }) {
       // Determine text color based on background brightness
       const textColor = isColorDark(customColor) ? "white" : "black";
       document.body.style.color = textColor;
+    } else if (isAboutPage) {
+      // About page always has white background
+      document.body.style.backgroundColor = "";
+      document.body.style.color = "";
+      document.body.className =
+        "bg-white transition-all duration-500 ease-in-out";
+    } else if (isWorkPage) {
+      // Work pages always have #202020 background
+      document.body.style.backgroundColor = "";
+      document.body.style.color = "";
+      document.body.className =
+        "bg-[#202020] text-white transition-all duration-500 ease-in-out";
     } else if (activeFilter === "narrative") {
       document.body.style.backgroundColor = "";
       document.body.style.color = "";
@@ -59,7 +74,7 @@ export function ThemeProvider({ children }) {
     }
 
     document.body.offsetHeight;
-  }, [activeFilter, customColor]);
+  }, [activeFilter, customColor, pathname]);
 
   // Helper function to determine if a color is dark
   const isColorDark = (hexColor) => {

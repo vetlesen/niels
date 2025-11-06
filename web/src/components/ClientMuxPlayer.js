@@ -18,7 +18,10 @@ export default function ClientMuxPlayer({
   const [error, setError] = useState(null);
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
   const playerRef = useRef(null);
+  const containerRef = useRef(null);
 
   const handleError = (event) => {
     console.error("Mux Player Error:", event);
@@ -45,6 +48,34 @@ export default function ClientMuxPlayer({
   const handleCanPlay = () => {
     setIsLoaded(true);
     setError(null);
+  };
+
+  const handlePlay = () => {
+    setIsPlaying(true);
+  };
+
+  const handlePause = () => {
+    setIsPlaying(false);
+  };
+
+  const togglePlayPause = () => {
+    if (playerRef.current) {
+      if (isPlaying) {
+        playerRef.current.pause();
+      } else {
+        playerRef.current.play();
+      }
+    }
+  };
+
+  const handleFullscreen = () => {
+    if (containerRef.current) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        containerRef.current.requestFullscreen();
+      }
+    }
   };
 
   // Validate playbackId
@@ -74,12 +105,33 @@ export default function ClientMuxPlayer({
 
   return (
     <div
+      ref={containerRef}
       className={`client-mux-player relative ${className}`}
-      style={{ width: "100%", ...style }}
+      style={{ width: "100%", aspectRatio: "16/9", ...style }}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
     >
+      {/* Custom Play/Pause Button */}
+      {isLoaded && (
+        <div
+          className="absolute inset-0 z-50 flex justify-center items-center pointer-events-none"
+          style={{
+            opacity: !isPlaying || (isPlaying && isHovering) ? 1 : 0,
+            transition: "opacity 0.3s ease-in-out",
+          }}
+        >
+          <button
+            onClick={togglePlayPause}
+            className="pointer-events-auto bg-opacity-50 hover:bg-opacity-70 text-white px-6 py-3 rounded-full transition-all duration-300 mix-blend-difference"
+          >
+            {isPlaying ? "Pause" : "Play"}
+          </button>
+        </div>
+      )}
+
       {/* Loading placeholder */}
       {!error && !isLoaded && (
-        <div className="inset-0" style={{ aspectRatio: "16/9" }}></div>
+        <div className="absolute inset-0" style={{ aspectRatio: "16/9" }}></div>
       )}
 
       {/* MuxPlayer */}
@@ -88,7 +140,7 @@ export default function ClientMuxPlayer({
           key={`${playbackId}-${retryCount}`}
           ref={playerRef}
           playbackId={playbackId}
-          controls={controls}
+          controls={false}
           autoPlay={autoPlay}
           muted={muted}
           loop={loop}
@@ -96,8 +148,13 @@ export default function ClientMuxPlayer({
           preload={preload}
           onCanPlay={handleCanPlay}
           onError={handleError}
+          onPlay={handlePlay}
+          onPause={handlePause}
+          accentColor="#202020"
+          className="custom-player"
           style={{
             width: "100%",
+            aspectRatio: "16/9",
             opacity: isLoaded ? 1 : 0,
             transition: "opacity 0.5s ease-in-out",
           }}

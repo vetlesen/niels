@@ -10,9 +10,9 @@ export default function Footer() {
       <Link
         href={"https://vetlesen.no"}
         target={"_blank"}
-        className="font-normal text-xs opacity-50 mt-42"
+        className="font-normal text-[10px] opacity-50 mt-42"
       >
-        Design + Dev <br></br>Jonas Vetlesen
+        Design + Dev<br></br>Jonas Vetlesen
       </Link>
     </footer>
   );

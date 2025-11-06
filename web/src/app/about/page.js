@@ -81,13 +81,22 @@ export default async function About() {
       </section>
       {/* Contact Section */}
       {settings?.contact && settings.contact.length > 0 && (
-        <section className="mb-6 md:mb-12 col-start-1 col-span-12 md:col-span-6">
+        <section className="mb-6 md:mb-20 col-start-1 md:col-start-1 col-span-12 md:col-span-6">
           <h2 className="mb-4 uppercase">Contact</h2>
           <div className="space-y-2">
             {settings.contact.map((item, index) => (
               <div key={index} className="gap-4 grid grid-cols-6 w-full">
                 <p className="col-span-3 font-normal">{item.label}</p>
-                <p className="col-span-3 font-normal">{item.value}</p>
+                {item.url ? (
+                  <Link
+                    className="col-span-3 font-normal hover:opacity-70"
+                    href={item.url}
+                  >
+                    {item.value}
+                  </Link>
+                ) : (
+                  <p className="col-span-3 font-normal">{item.value}</p>
+                )}
               </div>
             ))}
           </div>
@@ -95,13 +104,22 @@ export default async function About() {
       )}
       {/* Representation Section */}
       {settings?.representation && settings.representation.length > 0 && (
-        <section className="mb-6 md:mb-12 col-start-1 col-span-12 md:col-span-6">
+        <section className="mb-6 md:mb-20 col-start-1 md:col-start-1 col-span-12 md:col-span-6">
           <h2 className="mb-4 uppercase">Representation</h2>
           <div className="space-y-2">
             {settings.representation.map((item, index) => (
               <div key={index} className="gap-4 grid grid-cols-6 w-full">
                 <p className="col-span-3 font-normal">{item.label}</p>
-                <p className="col-span-3 font-normal">{item.value}</p>
+                {item.url ? (
+                  <Link
+                    className="col-span-3 font-normal hover:opacity-70"
+                    href={item.url}
+                  >
+                    {item.value}
+                  </Link>
+                ) : (
+                  <p className="col-span-3 font-normal">{item.value}</p>
+                )}
               </div>
             ))}
           </div>

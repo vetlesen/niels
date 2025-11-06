@@ -81,9 +81,9 @@ export default async function WorkDetail({ params }) {
         {/* Work Details */}
         <div className="mb-8 px-4">
           <h1 className="">{work.name}</h1>
-          <h2 className="">{work.title}</h2>
-          <p className="">{work.type}</p>
-          <p className="">{work.year}</p>
+          <h2 className="font-normal">{work.title}</h2>
+          <p className="font-normal">{work.type}</p>
+          <p className="font-normal">{work.year}</p>
         </div>
 
         <div className="w-full grid grid-cols-1 md:grid-cols-2 px-4">

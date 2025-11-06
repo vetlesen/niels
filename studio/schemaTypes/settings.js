@@ -47,6 +47,11 @@ export default {
               title: "Value",
               type: "string",
             },
+            {
+              name: "url",
+              title: "url",
+              type: "string",
+            },
           ],
         },
       ],
@@ -68,6 +73,11 @@ export default {
             {
               name: "value",
               title: "Value",
+              type: "string",
+            },
+            {
+              name: "url",
+              title: "url",
               type: "string",
             },
           ],

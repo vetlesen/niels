@@ -252,7 +252,7 @@ function WorkItem({
           className={`group flex flex-col rounded duration-100 ease-in-out ${
             isHighlighted
               ? "cursor-pointer opacity-100"
-              : "cursor-default opacity-100"
+              : "cursor-default opacity-100 pointer-events-none"
           }`}
           onMouseEnter={() => onMouseEnter(item._id)}
           onMouseLeave={() => onMouseLeave(null)}

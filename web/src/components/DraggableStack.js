@@ -570,7 +570,7 @@ export default function DraggableStack({
         <h4 className="mb-2 uppercase text-sm">stack</h4>
 
         {paletteColors.length > 0 && (
-          <div className="mb-4 flex items-center justify-between gap-2">
+          <div className="mb-4 flex items-start justify-between gap-2 relative">
             <div className="space-x-2">
               <button
                 className="text-sm opacity-90 hover:opacity-100 transition-opacity"
@@ -585,7 +585,7 @@ export default function DraggableStack({
                 Collect
               </button>
             </div>
-            <div className="flex gap-1.5">
+            <div className="flex gap-1.5 flex-col md:flex-row absolute right-0 z-50">
               {paletteColors.map((item, index) => (
                 <button
                   key={index}
