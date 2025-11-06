@@ -1,15 +1,20 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import VideoThumbnail from "./VideoThumbnail";
 
 // Individual draggable image component
 const DraggableImage = ({ item, index, onBringToFront, zIndex }) => {
   // Generate random position around center of screen on initial load
   const getRandomPosition = () => {
+    // Check if window is available (client-side)
+    if (typeof window === "undefined") {
+      return { top: 0, left: 0 };
+    }
+
     const centerX = window.innerWidth / 2;
     const centerY = window.innerHeight / 2;
-    const randomRange = 150; // pixels around center
+    const randomRange = 800; // pixels around center
 
     return {
       top: centerY - 100 + (Math.random() - 0.5) * randomRange, // -100 to account for image height
@@ -17,12 +22,20 @@ const DraggableImage = ({ item, index, onBringToFront, zIndex }) => {
     };
   };
 
-  const [position, setPosition] = useState(getRandomPosition);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
+
+  // Set random position after component mounts (client-side)
+  useEffect(() => {
+    setPosition(getRandomPosition());
+  }, []);
   const [isDragging, setIsDragging] = useState(false);
   const dragRef = useRef({ pos1: 0, pos2: 0, pos3: 0, pos4: 0 });
 
   const dragMouseDown = (e) => {
     e.preventDefault();
+    // Bring this item to the front when clicked
+    onBringToFront(index);
+
     // Get the mouse cursor position at startup
     dragRef.current.pos3 = e.clientX;
     dragRef.current.pos4 = e.clientY;
@@ -61,7 +74,7 @@ const DraggableImage = ({ item, index, onBringToFront, zIndex }) => {
       style={{
         top: `${position.top}px`,
         left: `${position.left}px`,
-        zIndex: isDragging ? 1000 : index,
+        zIndex: isDragging ? 1000 : zIndex,
       }}
       onMouseDown={dragMouseDown}
     >
@@ -102,9 +115,24 @@ const DraggableImage = ({ item, index, onBringToFront, zIndex }) => {
 
 // Main DraggableStack component
 export default function DraggableStack({ stackImages = [] }) {
+  // State to manage z-index order for bringing items to front
+  const [zIndexOrder, setZIndexOrder] = useState(() =>
+    stackImages.map((_, index) => index + 1)
+  );
+
   if (!stackImages || stackImages.length === 0) {
     return null;
   }
+
+  // Function to bring an item to the front
+  const bringToFront = (clickedIndex) => {
+    setZIndexOrder((prevOrder) => {
+      const maxZ = Math.max(...prevOrder);
+      const newOrder = [...prevOrder];
+      newOrder[clickedIndex] = maxZ + 1;
+      return newOrder;
+    });
+  };
 
   return (
     <section className="pt-20 min-h-screen overflow-hidden px-4">
@@ -112,13 +140,15 @@ export default function DraggableStack({ stackImages = [] }) {
         <h4 className="mb-2 opacity-50 uppercase text-xs">stack</h4>
       </div>
 
-      <div className="relative w-full h-[89svh] flex flex-col items-center justify-center overflow-visible">
+      <div className="relative w-full h-[120svh] flex flex-col items-center justify-center overflow-visible">
         <div className="relative w-full h-full flex items-center justify-center">
           {stackImages.map((item, index) => (
             <DraggableImage
               key={`${item._key || index}`}
               item={item}
               index={index}
+              onBringToFront={bringToFront}
+              zIndex={zIndexOrder[index]}
             />
           ))}
         </div>
