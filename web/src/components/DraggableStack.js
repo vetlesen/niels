@@ -59,9 +59,9 @@ function DraggableImage({
   const applyMomentum = () => {
     if (!isSettling) return;
 
-    const friction = 0.94; // Slightly more slide
-    const rotationFriction = 0.96;
-    const minVelocity = 0.05;
+    const friction = 0.9; // Slightly more slide
+    const rotationFriction = 0.9;
+    const minVelocity = 0.15;
     const minRotationVelocity = 0.1;
 
     velocityRef.current.x *= friction;
@@ -109,11 +109,17 @@ function DraggableImage({
     velocityRef.current = { x: 0, y: 0 };
     lastTimeRef.current = Date.now();
 
-    // Calculate spread position based on scroll
-    const spreadAmount = scrollProgress * 180;
-    const angle = (index / totalImages) * Math.PI * 2;
-    const spreadX = Math.cos(angle) * spreadAmount;
-    const spreadY = Math.sin(angle) * spreadAmount;
+    // Calculate spread position based on scroll with random distribution
+    const spreadAmount = scrollProgress * 300; // Increased spread distance
+
+    // Use seeded random for consistent but random spread positions
+    const randomAngle = seededRandom(index * 1337) * Math.PI * 2;
+    const randomDistance = seededRandom(index * 2674) * spreadAmount;
+    const randomOffsetX = seededRandom(index * 4011) * 100 - 50; // Additional random offset
+    const randomOffsetY = seededRandom(index * 5348) * 100 - 50;
+
+    const spreadX = Math.cos(randomAngle) * randomDistance + randomOffsetX;
+    const spreadY = Math.sin(randomAngle) * randomDistance + randomOffsetY;
 
     // Get the current visual position from the transform
     if (imageRef.current) {
@@ -289,11 +295,17 @@ function DraggableImage({
     };
   }, [isDragging, dragStart, initialPosition]);
 
-  // Calculate spread position based on scroll
-  const spreadAmount = scrollProgress * 180;
-  const angle = (index / totalImages) * Math.PI * 2;
-  const spreadX = Math.cos(angle) * spreadAmount;
-  const spreadY = Math.sin(angle) * spreadAmount;
+  // Calculate spread position based on scroll with random distribution
+  const spreadAmount = scrollProgress * 300; // Increased spread distance
+
+  // Use seeded random for consistent but random spread positions
+  const randomAngle = seededRandom(index * 1337) * Math.PI * 2;
+  const randomDistance = seededRandom(index * 2674) * spreadAmount;
+  const randomOffsetX = seededRandom(index * 4011) * 100 - 50; // Additional random offset
+  const randomOffsetY = seededRandom(index * 5348) * 100 - 50;
+
+  const spreadX = Math.cos(randomAngle) * randomDistance + randomOffsetX;
+  const spreadY = Math.sin(randomAngle) * randomDistance + randomOffsetY;
 
   const finalX = position.x + spreadX;
   const finalY = position.y + spreadY;
@@ -334,7 +346,7 @@ function DraggableImage({
         <VideoThumbnail
           playbackId={image.asset.playbackId}
           timestamp={image.timestamp || "0:00"}
-          isHovered={isDragging}
+          isHovered={true}
           className="pointer-events-none block"
           style={{
             maxWidth: "200px",
@@ -343,7 +355,7 @@ function DraggableImage({
             height: "auto",
           }}
           maxResolution="270p"
-          loopDuration={5}
+          loopDuration={60}
         />
       ) : (
         <div className="w-48 h-64 bg-gray-100 flex items-center justify-center text-gray-500">
@@ -439,6 +451,9 @@ export default function DraggableStack({
   const [selectedColor, setSelectedColor] = useState(
     paletteColors[0]?.color || null
   );
+
+  // State for mobile dropdown
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   // Handle scroll for fade-in effect and image spreading
   useEffect(() => {
@@ -638,70 +653,133 @@ export default function DraggableStack({
   }
 
   return (
-    <section
-      ref={sectionRef}
-      className="pt-20 min-h-screen overflow-hidden px-4"
-    >
+    <>
       <div
+        className="w-full sticky top-0 pt-4 z-50 mt-20"
         style={{
-          transition: "opacity 0.3s ease-out",
+          backgroundColor:
+            sectionRef.current?.colorChangeState && selectedColor
+              ? selectedColor
+              : "transparent",
+          transition: "background-color 1s ease-out",
         }}
       >
-        <h4 className="mb-2 uppercase text-sm">stack</h4>
-
-        {paletteColors.length > 0 && (
-          <div className="mb-4 flex items-center justify-between gap-2">
-            <div className="space-x-2">
-              <button
-                className="text-sm opacity-90 hover:opacity-100 transition-opacity"
-                onClick={handleExpand}
-              >
-                Expand
-              </button>
-              <button
-                className="text-sm opacity-90 hover:opacity-100 transition-opacity"
-                onClick={handleCollect}
-              >
-                Collect
-              </button>
-            </div>
-            <div className="flex gap-1.5">
-              {paletteColors.map((item, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleColorChange(item.color)}
-                  className={`h-4 w-4 transition-transform cursor-pointer ${
-                    selectedColor === item.color
-                      ? "scale-125 ring-1 ring-current"
-                      : ""
-                  }`}
-                  style={{ backgroundColor: item.color }}
-                  title={item.name}
-                  aria-label={`Set background to ${item.name}`}
-                />
-              ))}
-            </div>
+        <div
+          className="grid grid-cols-12 mx-4 border-b pb-4"
+          style={{
+            transition: "opacity 0.3s ease-out",
+          }}
+        >
+          <h4 className="uppercase text-sm col-span-3 md:col-span-3">stack</h4>
+          <div className="col-span-4 md:col-span-3 space-x-4 flex justify-start">
+            <button
+              className="text-sm opacity-90 hover:opacity-100 transition-opacity inline"
+              onClick={handleExpand}
+            >
+              Expand
+            </button>
+            <button
+              className="text-sm opacity-90 hover:opacity-100 transition-opacity inline"
+              onClick={handleCollect}
+            >
+              Collect
+            </button>
           </div>
-        )}
-      </div>
+          {paletteColors.length > 0 && (
+            <div className="col-span-5 flex justify-end md:justify-start md:col-span-3">
+              {/* Desktop: Inline color buttons */}
+              <div className="hidden md:flex gap-1.5">
+                {paletteColors.map((item, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleColorChange(item.color)}
+                    className={`h-4 w-4 transition-transform cursor-pointer ${
+                      selectedColor === item.color
+                        ? "scale-125 ring-1 ring-current"
+                        : ""
+                    }`}
+                    style={{ backgroundColor: item.color }}
+                    title={item.name}
+                    aria-label={`Set background to ${item.name}`}
+                  />
+                ))}
+              </div>
 
-      <div className="relative w-full h-[89svh] flex flex-col items-center justify-center overflow-visible">
-        <div className="relative w-full h-full flex items-center justify-center">
-          {safeStackImages.map((image, index) => (
-            <DraggableImage
-              key={`${image._key || index}`}
-              image={image}
-              index={index}
-              totalImages={safeStackImages.length}
-              onBringToFront={handleBringToFront}
-              cardRefs={cardRefs}
-              scrollProgress={scrollProgress}
-              basePositions={basePositions}
-              onPositionUpdate={updatePositions}
-            />
-          ))}
+              {/* Mobile: Dropdown */}
+              <div className="md:hidden relative">
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  className="flex items-center gap-2 text-sm opacity-90 hover:opacity-100 transition-opacity"
+                >
+                  <div
+                    className="h-4 w-4 rounded ring"
+                    style={{ backgroundColor: selectedColor || "#ccc" }}
+                  />
+                  Colors
+                  <svg
+                    className={`w-3 h-3 transition-transform ${
+                      isDropdownOpen ? "rotate-180" : ""
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </button>
+
+                {isDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-2 p-2 bg-white border border-gray-200 rounded shadow-lg z-50">
+                    <div className="flex flex-col gap-1 w-[80px]">
+                      {paletteColors.map((item, index) => (
+                        <button
+                          key={index}
+                          onClick={() => {
+                            handleColorChange(item.color);
+                            setIsDropdownOpen(false);
+                          }}
+                          className={`h-6 w-full transition-transform cursor-pointer rounded ${
+                            selectedColor === item.color
+                              ? "ring-1 ring-black"
+                              : ""
+                          }`}
+                          style={{ backgroundColor: item.color }}
+                          title={item.name}
+                          aria-label={`Set background to ${item.name}`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
-    </section>
+      <section ref={sectionRef} className="min-h-screen overflow-hidden px-4">
+        <div className="relative w-full min-h-[120svh] flex flex-col items-center justify-center overflow-visible border-b">
+          <div className="relative w-full h-full flex items-center justify-center ">
+            {safeStackImages.map((image, index) => (
+              <DraggableImage
+                key={`${image._key || index}`}
+                image={image}
+                index={index}
+                totalImages={safeStackImages.length}
+                onBringToFront={handleBringToFront}
+                cardRefs={cardRefs}
+                scrollProgress={scrollProgress}
+                basePositions={basePositions}
+                onPositionUpdate={updatePositions}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+    </>
   );
 }
