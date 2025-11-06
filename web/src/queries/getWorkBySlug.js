@@ -9,13 +9,18 @@ export async function getWorkBySlug(slug) {
     type,
     year,
     category,
+    hidden,
+    password,
     video {
       asset-> {
         _id,
         playbackId,
         assetId,
-        status
-      }
+        status,
+        data {
+          aspect_ratio,
+        },
+      },
     },
     credits[] {
       role,
@@ -46,11 +51,15 @@ export async function getWorkBySlug(slug) {
         }
       }
     },
-    stack[] {
+    stack[0...10] {
       _key,
+      _type,
       asset-> {
         _id,
         url,
+        playbackId,
+        assetId,
+        status,
         metadata {
           dimensions {
             width,

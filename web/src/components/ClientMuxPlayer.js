@@ -5,20 +5,29 @@ import MuxPlayer from "@mux/mux-player-react";
 export default function ClientMuxPlayer({
   playbackId,
   controls = true,
-  autoPlay = false,
-  muted = false,
-  loop = false,
+  autoPlay = true,
+  muted = true,
+  loop = true,
   playsInline = true,
   preload = "metadata",
   className = "",
   style = {},
+  aspectRatio = null,
   ...props
 }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState(null);
   const [isRetrying, setIsRetrying] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isHovering, setIsHovering] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
+  const [videoAspectRatio, setVideoAspectRatio] = useState(
+    aspectRatio || "16/9"
+  );
   const playerRef = useRef(null);
+  const containerRef = useRef(null);
 
   const handleError = (event) => {
     console.error("Mux Player Error:", event);
@@ -45,6 +54,52 @@ export default function ClientMuxPlayer({
   const handleCanPlay = () => {
     setIsLoaded(true);
     setError(null);
+    // Get video dimensions from the player element
+    if (playerRef.current) {
+      const videoElement = playerRef.current.querySelector("video");
+      if (videoElement && videoElement.videoWidth && videoElement.videoHeight) {
+        const ratio = videoElement.videoWidth / videoElement.videoHeight;
+        setVideoAspectRatio(ratio.toString());
+      }
+    }
+  };
+
+  const handlePlay = () => {
+    setIsPlaying(true);
+  };
+
+  const handlePause = () => {
+    setIsPlaying(false);
+  };
+
+  const togglePlayPause = () => {
+    if (playerRef.current) {
+      if (!hasUserInteracted) {
+        // First user interaction: restart from beginning with sound
+        playerRef.current.currentTime = 0;
+        playerRef.current.muted = false;
+        setIsMuted(false);
+        setHasUserInteracted(true);
+        playerRef.current.play();
+      } else {
+        // Normal play/pause toggle after first interaction
+        if (isPlaying) {
+          playerRef.current.pause();
+        } else {
+          playerRef.current.play();
+        }
+      }
+    }
+  };
+
+  const handleFullscreen = () => {
+    if (containerRef.current) {
+      if (document.fullscreenElement) {
+        document.exitFullscreen();
+      } else {
+        containerRef.current.requestFullscreen();
+      }
+    }
   };
 
   // Validate playbackId
@@ -74,13 +129,31 @@ export default function ClientMuxPlayer({
 
   return (
     <div
+      ref={containerRef}
       className={`client-mux-player relative ${className}`}
-      style={{ width: "100%", ...style }}
+      style={{ width: "100%", aspectRatio: videoAspectRatio, ...style }}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
     >
-      {/* Loading placeholder */}
-      {!error && !isLoaded && (
-        <div className="inset-0" style={{ aspectRatio: "16/9" }}></div>
+      {/* Custom Play/Pause Button */}
+      {isLoaded && (
+        <div
+          className="absolute inset-0 z-50 flex justify-center items-center mix-blend-difference hover:mix-blend-normal pointer-events-none"
+          onClick={togglePlayPause}
+          style={{
+            opacity:
+              !hasUserInteracted || (hasUserInteracted && isHovering) ? 1 : 0,
+            transition: "opacity 0.3s ease-in-out",
+          }}
+        >
+          <button className="pointer-events-auto bg-opacity-50 hover:bg-opacity-70 text-white cursor-pointer transition-all duration-300 mix-blend-difference h-[70%] w-full ">
+            {!hasUserInteracted ? "Play" : isPlaying ? "Pause" : "Play"}
+          </button>
+        </div>
       )}
+
+      {/* Loading placeholder */}
+      {!error && !isLoaded && <div className="absolute inset-0"></div>}
 
       {/* MuxPlayer */}
       {!error && (
@@ -88,14 +161,17 @@ export default function ClientMuxPlayer({
           key={`${playbackId}-${retryCount}`}
           ref={playerRef}
           playbackId={playbackId}
-          controls={controls}
           autoPlay={autoPlay}
-          muted={muted}
+          muted={isMuted}
           loop={loop}
           playsInline={playsInline}
           preload={preload}
           onCanPlay={handleCanPlay}
           onError={handleError}
+          onPlay={handlePlay}
+          onPause={handlePause}
+          accentColor="#202020"
+          className={`custom-player ${!hasUserInteracted ? "no-controls" : ""}`}
           style={{
             width: "100%",
             opacity: isLoaded ? 1 : 0,

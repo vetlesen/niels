@@ -6,11 +6,13 @@ export async function getSettings() {
     bio,
     contact[] {
       label,
-      value
+      value,
+      url
     },
     representation[] {
       label,
-      value
+      value,
+      url
     },
     awards->{
       _id,

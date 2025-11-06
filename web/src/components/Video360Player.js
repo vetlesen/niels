@@ -279,14 +279,14 @@ export default function Video360Player({ videoUrl, isHLS = false }) {
         <button
           onClick={togglePlay}
           disabled={isLoading}
-          className="font-normal text-sm px-2 py-1 bg-black/80 text-white hover:bg-black/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="font-normal text-xs px-2 py-1 bg-black/80 text-white hover:bg-black/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isPlaying ? "Pause" : "Play"}
         </button>
         <button
           onClick={toggleMute}
           disabled={isLoading}
-          className="font-normal text-sm px-2 py-1 bg-black/80 text-white hover:bg-black/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="font-normal text-xs px-2 py-1 bg-black/80 text-white hover:bg-black/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isMuted ? "Unmute" : "Mute"}
         </button>
