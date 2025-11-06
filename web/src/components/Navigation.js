@@ -5,7 +5,7 @@ import AnimatedName from "./AnimatedName";
 
 export default function Nav() {
   return (
-    <nav className="flex justify-between px-4 pt-2 uppercase">
+    <nav className="flex justify-between px-4 pt-4 uppercase">
       <Link href={"/"}>
         <AnimatedName />
       </Link>

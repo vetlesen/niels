@@ -75,7 +75,7 @@ export default async function About() {
         {/* niels */}
         <Video360Player videoUrl="https://stream.mux.com/p003wY5GkeoYnrkElL3J00qIA02ytwwPRl0201kcWpg8T8k8.m3u8" />
 
-        <p className="pt-2 font-normal text-sm opacity-50">
+        <p className="pt-2 font-normal text-xs opacity-50">
           Drag and rotate video
         </p>
       </section>
@@ -89,10 +89,23 @@ export default async function About() {
                 <p className="col-span-3 font-normal">{item.label}</p>
                 {item.url ? (
                   <Link
-                    className="col-span-3 font-normal hover:opacity-70"
+                    className="col-span-3 font-normal hover:opacity-70 inline-flex items-center gap-1 group"
                     href={item.url}
                   >
                     {item.value}
+                    <svg
+                      width="9"
+                      height="9"
+                      viewBox="0 0 9 9"
+                      fill="none"
+                      className="md:opacity-0 group-hover:opacity-100 md:rotate-45 group-hover:rotate-0 transition-all duration-300"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M2.18496 5.86322e-07L0.989949 1.19501L6.04576 1.20208L0 7.24785L0.848528 8.09637L6.89429 2.05061L6.90136 7.10642L8.09637 5.91141V0L2.18496 5.86322e-07Z"
+                        fill="black"
+                      />
+                    </svg>
                   </Link>
                 ) : (
                   <p className="col-span-3 font-normal">{item.value}</p>
@@ -112,10 +125,23 @@ export default async function About() {
                 <p className="col-span-3 font-normal">{item.label}</p>
                 {item.url ? (
                   <Link
-                    className="col-span-3 font-normal hover:opacity-70"
+                    className="col-span-3 font-normal hover:opacity-70 inline-flex items-center gap-1 group"
                     href={item.url}
                   >
                     {item.value}
+                    <svg
+                      width="9"
+                      height="9"
+                      viewBox="0 0 9 9"
+                      fill="none"
+                      className="md:opacity-0 group-hover:opacity-100 md:rotate-45 group-hover:rotate-0 transition-all duration-300"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M2.18496 5.86322e-07L0.989949 1.19501L6.04576 1.20208L0 7.24785L0.848528 8.09637L6.89429 2.05061L6.90136 7.10642L8.09637 5.91141V0L2.18496 5.86322e-07Z"
+                        fill="black"
+                      />
+                    </svg>
                   </Link>
                 ) : (
                   <p className="col-span-3 font-normal">{item.value}</p>
@@ -144,13 +170,26 @@ export default async function About() {
                 <Link
                   key={award._id}
                   href={`/work/${firstWork.slug.current}`}
-                  className="mb-4 hover:opacity-70 col-span-full gap-4 grid grid-cols-12"
+                  className="mb-4 hover:opacity-70 col-span-full gap-4 grid grid-cols-12 group"
                 >
                   <p className="col-span-6 md:col-span-3 font-normal">
                     {workNames}
                   </p>
-                  <p className="col-span-6 font-normal">
+                  <p className="col-span-6 font-normal inline-flex items-center gap-1">
                     {award.name} ({award.year})
+                    <svg
+                      width="11"
+                      height="9"
+                      viewBox="0 0 11 9"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="md:opacity-0 group-hover:opacity-100 group-hover:rotate-0 transition-all duration-300"
+                    >
+                      <path
+                        d="M6.67 0L4.98 6.87623e-09L8.55 3.58L0 3.58V4.78H8.55L4.98 8.36H6.67L10.85 4.18L6.67 0Z"
+                        fill="black"
+                      />
+                    </svg>
                   </p>
                 </Link>
               );

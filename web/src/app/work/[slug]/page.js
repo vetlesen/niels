@@ -90,15 +90,17 @@ export default async function WorkDetail({ params }) {
           {/* Credits */}
           {work.credits && work.credits.length > 0 && (
             <div className="grid-span-1">
-              <h3 className="mb-2 opacity-50 uppercase text-sm">Credits</h3>
-              <div className="space-y-2">
+              <h3 className="mb-2 opacity-50 uppercase text-xs">Credits</h3>
+              <div className="space-y-2 font-normal">
                 {work.credits.map((credit, index) => (
-                  <ul key={index} className="grid grid-cols-2">
-                    <li className="">{credit.role}</li>
+                  <ul key={index} className="grid grid-cols-2 font-normal">
+                    <li className="font-normal">{credit.role}</li>
                     {credit.names && credit.names.length > 0 && (
-                      <ul className=" ">
+                      <ul className="font-normal">
                         {credit.names.map((name, nameIndex) => (
-                          <li key={nameIndex}>{name}</li>
+                          <li className="font-normal" key={nameIndex}>
+                            {name}
+                          </li>
                         ))}
                       </ul>
                     )}
@@ -110,9 +112,9 @@ export default async function WorkDetail({ params }) {
           <div className="grid-span-1">
             {work.awards && work.awards.length > 0 ? (
               <div className="space-y-2 mb-6">
-                <h3 className="mb-2 opacity-50 uppercase text-sm">Awards</h3>
+                <h3 className="mb-2 opacity-50 uppercase text-xs">Awards</h3>
                 {work.awards.map((award, index) => (
-                  <div key={index} className=" ">
+                  <div key={index} className="font-normal">
                     {award.name} ({award.year})
                   </div>
                 ))}
@@ -120,11 +122,16 @@ export default async function WorkDetail({ params }) {
             ) : null}
             {work.info && work.info.length > 0 && (
               <>
-                <h3 className="mb-2 opacity-50 uppercase text-sm">Info</h3>
+                <h3 className="mb-2 opacity-50 uppercase text-xs">Info</h3>
 
                 <PortableText
                   value={work.info}
                   components={{
+                    block: {
+                      normal: ({ children }) => (
+                        <p className="font-normal">{children}</p>
+                      ),
+                    },
                     marks: {
                       link: ({ children, value }) => (
                         <a

@@ -5,9 +5,9 @@ import MuxPlayer from "@mux/mux-player-react";
 export default function ClientMuxPlayer({
   playbackId,
   controls = true,
-  autoPlay = false,
-  muted = false,
-  loop = false,
+  autoPlay = true,
+  muted = true,
+  loop = true,
   playsInline = true,
   preload = "metadata",
   className = "",
@@ -20,6 +20,8 @@ export default function ClientMuxPlayer({
   const [retryCount, setRetryCount] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isHovering, setIsHovering] = useState(false);
+  const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [isMuted, setIsMuted] = useState(true);
   const playerRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -60,10 +62,20 @@ export default function ClientMuxPlayer({
 
   const togglePlayPause = () => {
     if (playerRef.current) {
-      if (isPlaying) {
-        playerRef.current.pause();
-      } else {
+      if (!hasUserInteracted) {
+        // First user interaction: restart from beginning with sound
+        playerRef.current.currentTime = 0;
+        playerRef.current.muted = false;
+        setIsMuted(false);
+        setHasUserInteracted(true);
         playerRef.current.play();
+      } else {
+        // Normal play/pause toggle after first interaction
+        if (isPlaying) {
+          playerRef.current.pause();
+        } else {
+          playerRef.current.play();
+        }
       }
     }
   };
@@ -114,17 +126,16 @@ export default function ClientMuxPlayer({
       {/* Custom Play/Pause Button */}
       {isLoaded && (
         <div
-          className="absolute inset-0 z-50 flex justify-center items-center pointer-events-none"
+          className="absolute inset-0 z-50 flex justify-center items-center mix-blend-difference hover:mix-blend-normal pointer-events-none"
+          onClick={togglePlayPause}
           style={{
-            opacity: !isPlaying || (isPlaying && isHovering) ? 1 : 0,
+            opacity:
+              !hasUserInteracted || (hasUserInteracted && isHovering) ? 1 : 0,
             transition: "opacity 0.3s ease-in-out",
           }}
         >
-          <button
-            onClick={togglePlayPause}
-            className="pointer-events-auto bg-opacity-50 hover:bg-opacity-70 text-white px-6 py-3 rounded-full transition-all duration-300 mix-blend-difference"
-          >
-            {isPlaying ? "Pause" : "Play"}
+          <button className="pointer-events-auto bg-opacity-50 hover:bg-opacity-70 text-white cursor-pointer transition-all duration-300 mix-blend-difference h-[70%] w-full ">
+            {!hasUserInteracted ? "Play" : isPlaying ? "Pause" : "Play"}
           </button>
         </div>
       )}
@@ -140,9 +151,8 @@ export default function ClientMuxPlayer({
           key={`${playbackId}-${retryCount}`}
           ref={playerRef}
           playbackId={playbackId}
-          controls={false}
           autoPlay={autoPlay}
-          muted={muted}
+          muted={isMuted}
           loop={loop}
           playsInline={playsInline}
           preload={preload}
@@ -151,7 +161,7 @@ export default function ClientMuxPlayer({
           onPlay={handlePlay}
           onPause={handlePause}
           accentColor="#202020"
-          className="custom-player"
+          className={`custom-player ${!hasUserInteracted ? "no-controls" : ""}`}
           style={{
             width: "100%",
             aspectRatio: "16/9",

@@ -3,10 +3,11 @@
 import { useTheme } from "../contexts/ThemeContext";
 
 export default function AnimatedName({ text = "Niels Windfeldt" }) {
-  const { activeFilter } = useTheme();
+  const { isDarkBackground } = useTheme();
 
   const getHoverClasses = () => {
-    if (activeFilter === "narrative") {
+    // If dark background, use white hover; if light background, use black hover
+    if (isDarkBackground) {
       return "hover:bg-white hover:text-transparent";
     } else {
       return "hover:bg-black hover:text-transparent";

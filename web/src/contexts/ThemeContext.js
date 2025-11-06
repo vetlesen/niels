@@ -103,9 +103,34 @@ export function ThemeProvider({ children }) {
     setCustomColor(color);
   };
 
+  // Determine if current background is dark
+  const getIsDarkBackground = () => {
+    const isWorkPage = pathname.startsWith("/work/");
+    const isAboutPage = pathname === "/about";
+
+    if (customColor) {
+      return isColorDark(customColor);
+    } else if (isAboutPage) {
+      return false; // white background
+    } else if (isWorkPage) {
+      return true; // #202020 background
+    } else if (activeFilter === "narrative") {
+      return true; // #202020 background
+    } else if (activeFilter === "commercial") {
+      return false; // white background
+    }
+    return false;
+  };
+
   return (
     <ThemeContext.Provider
-      value={{ activeFilter, setFilter, setBackgroundColor, customColor }}
+      value={{
+        activeFilter,
+        setFilter,
+        setBackgroundColor,
+        customColor,
+        isDarkBackground: getIsDarkBackground(),
+      }}
     >
       {children}
     </ThemeContext.Provider>

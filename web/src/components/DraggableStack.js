@@ -567,21 +567,15 @@ export default function DraggableStack({
           transition: "opacity 0.3s ease-out",
         }}
       >
-        <h4 className="mb-2 uppercase text-sm">stack</h4>
+        <h4 className="mb-2 opacity-50 uppercase text-xs">stack</h4>
 
         {paletteColors.length > 0 && (
           <div className="mb-4 flex items-start justify-between gap-2 relative">
             <div className="space-x-2">
-              <button
-                className="text-sm opacity-90 hover:opacity-100 transition-opacity"
-                onClick={handleExpand}
-              >
+              <button className="" onClick={handleExpand}>
                 Expand
               </button>
-              <button
-                className="text-sm opacity-90 hover:opacity-100 transition-opacity"
-                onClick={handleCollect}
-              >
+              <button className="" onClick={handleCollect}>
                 Collect
               </button>
             </div>
