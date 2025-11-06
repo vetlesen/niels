@@ -41,7 +41,7 @@ function ThumbnailWrapper({
       },
       {
         rootMargin: "150px",
-        threshold: 0.05,
+        threshold: 0.01,
       }
     );
 
@@ -70,11 +70,12 @@ function ThumbnailWrapper({
   return (
     <div
       ref={thumbnailRef}
-      className={`mix-blend-difference transition-all duration-300 ease-out flex-shrink-0 ${
+      className={`mix-blend-difference transition-all duration-300 ease-out flex flex-shrink-0 ${
         shouldLoad ? "opacity-100" : "opacity-0"
       }`}
       onMouseEnter={() => setHoveredThumbnail(thumbnailId)}
       onMouseLeave={() => setHoveredThumbnail(null)}
+      style={{ aspectRatio: cssAspectRatio }}
     >
       {shouldLoad ? (
         thumbnail.type === "image" ? (
