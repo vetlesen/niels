@@ -1,5 +1,7 @@
 import { defineConfig } from "sanity";
 import { structureTool } from "sanity/structure";
+import { dashboardTool } from "@sanity/dashboard";
+import { plausibleWidget } from "sanity-plugin-plausible-analytics";
 import { visionTool } from "@sanity/vision";
 import { muxInput } from "sanity-plugin-mux-input";
 import { orderableDocumentListDeskItem } from "@sanity/orderable-document-list";
@@ -57,6 +59,13 @@ export default defineConfig({
     }),
     visionTool(),
     muxInput(),
+    dashboardTool({
+      widgets: [
+        plausibleWidget({
+          url: "https://plausible.io/share/nielswindfeldt.com?auth=Gi8umo5oMfaLcWFDAhJT6",
+        }),
+      ],
+    }),
   ],
 
   schema: {

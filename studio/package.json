@@ -15,12 +15,14 @@
     "sanity"
   ],
   "dependencies": {
+    "@sanity/dashboard": "^5.0.0",
     "@sanity/orderable-document-list": "^1.4.0",
     "@sanity/vision": "^4.10.3",
     "react": "^19.1",
     "react-dom": "^19.1",
     "sanity": "^4.10.3",
     "sanity-plugin-mux-input": "^2.9.1",
+    "sanity-plugin-plausible-analytics": "^1.1.0",
     "styled-components": "^6.1.18"
   },
   "devDependencies": {

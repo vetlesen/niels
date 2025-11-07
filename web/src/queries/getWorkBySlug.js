@@ -1,6 +1,12 @@
 import { client } from "../lib/client";
 
-export async function getWorkBySlug(slug) {
+export async function getWorkBySlug(slug, randomSeed = null) {
+  // If randomSeed is provided, use it to get a random selection
+  const stackSlice =
+    randomSeed !== null
+      ? `stack[${randomSeed}...${randomSeed + 20}]`
+      : "stack[0...20]";
+
   const query = `*[_type == "work" && slug.current == $slug][0] {
     _id,
     name,
@@ -73,7 +79,8 @@ export async function getWorkBySlug(slug) {
         }
       }
     },
-    stack[0...20] {
+    "stackCount": count(stack),
+    ${stackSlice} {
       _key,
       _type,
       asset-> {
@@ -99,9 +106,9 @@ export async function getWorkBySlug(slug) {
         }
       }
     },
-    "imagePalette0": stack[0].asset->metadata.palette,
-    "imagePalette1": stack[4].asset->metadata.palette,
-    "imagePalette2": stack[8].asset->metadata.palette,
+    "imagePalette0": ${stackSlice}[0].asset->metadata.palette,
+    "imagePalette1": ${stackSlice}[4].asset->metadata.palette,
+    "imagePalette2": ${stackSlice}[8].asset->metadata.palette,
     colorOverwrite
   }`;
 
