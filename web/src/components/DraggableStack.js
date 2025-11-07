@@ -711,7 +711,7 @@ export default function DraggableStack({
                   className="flex items-center gap-2 text-sm opacity-90 hover:opacity-100 transition-opacity"
                 >
                   <div
-                    className="h-4 w-4 rounded ring"
+                    className="h-4 w-4   ring"
                     style={{ backgroundColor: selectedColor || "#ccc" }}
                   />
                   Colors
@@ -742,7 +742,7 @@ export default function DraggableStack({
                             handleColorChange(item.color);
                             setIsDropdownOpen(false);
                           }}
-                          className={`h-6 w-full transition-transform cursor-pointer rounded ${
+                          className={`h-6 w-full transition-transform cursor-pointer   ${
                             selectedColor === item.color
                               ? "ring-1 ring-black"
                               : ""

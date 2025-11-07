@@ -183,7 +183,7 @@ function WorkItem({
               ? `/work/${item.slug?.current}/password`
               : `/work/${item.slug?.current}`
           }
-          className={`group flex flex-col rounded duration-100 ease-in-out ${
+          className={`group flex flex-col   duration-100 ease-in-out ${
             isHighlighted
               ? "cursor-pointer opacity-100"
               : "cursor-default opacity-100 pointer-events-none"
@@ -301,8 +301,8 @@ function WorkItem({
         // Placeholder skeleton for WorkItem
         <div className="flex flex-col">
           <div className="flex flex-row space-x-2 pt-2 px-2">
-            <div className="h-6 w-32 bg-gray-800 rounded animate-pulse" />
-            <div className="h-6 w-24 bg-gray-800 rounded animate-pulse" />
+            <div className="h-6 w-32 bg-gray-800   animate-pulse" />
+            <div className="h-6 w-24 bg-gray-800   animate-pulse" />
           </div>
           <div className="flex gap-2 bg-black p-2 overflow-x-auto">
             {Array.from({ length: 12 }).map((_, index) => (
