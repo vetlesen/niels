@@ -52,6 +52,8 @@ function DraggableImage({
   // Pinch gesture state
   const [initialDistance, setInitialDistance] = useState(0);
   const [initialScale, setInitialScale] = useState(1);
+  const [initialAngle, setInitialAngle] = useState(0);
+  const [initialRotation, setInitialRotation] = useState(0);
   const lastClickTimeRef = useRef(0);
 
   // Use base positions from parent array
@@ -124,6 +126,13 @@ function DraggableImage({
     const dx = touch1.clientX - touch2.clientX;
     const dy = touch1.clientY - touch2.clientY;
     return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  // Get angle between two touch points
+  const getAngle = (touch1, touch2) => {
+    const dx = touch2.clientX - touch1.clientX;
+    const dy = touch2.clientY - touch1.clientY;
+    return Math.atan2(dy, dx) * (180 / Math.PI);
   };
 
   const handleMouseDown = (e) => {
@@ -228,16 +237,19 @@ function DraggableImage({
 
   // Touch events
   const handleTouchStart = (e) => {
-    // Handle pinch-to-zoom with two fingers
+    // Handle pinch-to-zoom and rotate with two fingers
     if (e.touches.length === 2) {
       e.preventDefault();
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
       const distance = getDistance(touch1, touch2);
+      const angle = getAngle(touch1, touch2);
 
       setIsPinching(true);
       setInitialDistance(distance);
       setInitialScale(scale);
+      setInitialAngle(angle);
+      setInitialRotation(rotation);
       onBringToFront(index);
       return;
     }
@@ -294,17 +306,24 @@ function DraggableImage({
   const handleTouchMove = (e) => {
     e.preventDefault();
 
-    // Handle pinch-to-zoom
+    // Handle pinch-to-zoom and rotate
     if (isPinching && e.touches.length === 2) {
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
       const currentDistance = getDistance(touch1, touch2);
+      const currentAngle = getAngle(touch1, touch2);
 
       if (initialDistance > 0) {
+        // Handle scaling
         const scaleChange = currentDistance / initialDistance;
         const newScale = Math.max(0.5, Math.min(3, initialScale * scaleChange));
         setScale(newScale);
         setIsZoomed(newScale > 1);
+
+        // Handle rotation
+        const angleDifference = currentAngle - initialAngle;
+        const newRotation = initialRotation + angleDifference;
+        setRotation(newRotation);
       }
       return;
     }
@@ -390,7 +409,7 @@ function DraggableImage({
         isDragging ? "cursor-grabbing" : "cursor-grab"
       }`}
       style={{
-        transform: `translate(${finalX}px, ${finalY}px) rotate(${rotation}deg)`,
+        transform: `translate(${finalX}px, ${finalY}px) rotate(${rotation}deg) scale(${scale})`,
         transformOrigin: "center center",
         zIndex: zIndex,
         touchAction: "none",
@@ -413,7 +432,6 @@ function DraggableImage({
             maxHeight: "300px",
             width: "auto",
             height: "auto",
-            transform: `scale(${scale})`,
           }}
         />
       ) : image?.asset?.playbackId ? (
@@ -427,18 +445,12 @@ function DraggableImage({
             maxHeight: "300px",
             width: "auto",
             height: "auto",
-            transform: `scale(${scale})`,
           }}
           maxResolution="270p"
           loopDuration={60}
         />
       ) : (
-        <div
-          className="w-48 h-64 bg-gray-100 flex items-center justify-center text-gray-500 transition-transform duration-300 ease-out"
-          style={{
-            transform: `scale(${scale})`,
-          }}
-        >
+        <div className="w-48 h-64 bg-gray-100 flex items-center justify-center text-gray-500 transition-transform duration-300 ease-out">
           Item {index + 1}
         </div>
       )}
