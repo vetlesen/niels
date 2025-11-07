@@ -708,9 +708,6 @@ export default function DraggableStack({
       };
     });
 
-    // Update the base positions array
-    setBasePositions(newPositions);
-
     // Apply visual transform
     safeStackImages.forEach((_, index) => {
       const gridPosition = getExpandedPosition(index);
@@ -730,6 +727,11 @@ export default function DraggableStack({
         }, 700);
       }
     });
+
+    // Update the base positions array after animation completes
+    setTimeout(() => {
+      setBasePositions(newPositions);
+    }, 700);
   };
 
   const handleCollect = () => {

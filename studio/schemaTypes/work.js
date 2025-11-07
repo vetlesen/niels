@@ -226,6 +226,8 @@ export default {
       name: "stack",
       title: "Stack",
       type: "array",
+      description:
+        "Upload the smallest as possible size and for video use h264/h265/mp4",
       of: [
         {
           name: "image",
