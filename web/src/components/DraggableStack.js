@@ -384,13 +384,13 @@ export default function DraggableStack({
 }) {
   const { setBackgroundColor } = useTheme();
   const sectionRef = useRef(null);
-  const [maxZIndex, setMaxZIndex] = useState(stackImages.length);
+  const [maxZIndex, setMaxZIndex] = useState(stackImages?.length || 0);
   const [scrollProgress, setScrollProgress] = useState(0);
   const [hasInteracted, setHasInteracted] = useState(false);
 
   // Generate target positions for spread (calculated once)
   const spreadTargets = useRef(
-    stackImages.map((_, index) => {
+    (stackImages || []).map((_, index) => {
       // Create an organic spread pattern using multiple random factors
       const randomAngle = seededRandom(index * 1337) * Math.PI * 2;
       const randomRadius = seededRandom(index * 2674) * 200 + 50;
@@ -407,12 +407,12 @@ export default function DraggableStack({
 
   // Initialize transforms for all images - start stacked at center
   const [transforms, setTransforms] = useState(() =>
-    stackImages.map((_, index) => ({
+    (stackImages || []).map((_, index) => ({
       x: 0, // Start at center
       y: 0, // Start at center
       rotation: index * 2 - 4 + seededRandom(index * 789) * 8 - 4,
       scale: 1,
-      zIndex: stackImages.length - index,
+      zIndex: (stackImages || []).length - index,
     }))
   );
 
@@ -443,6 +443,8 @@ export default function DraggableStack({
 
   // Expand images into grid
   const handleExpand = useCallback(() => {
+    if (!stackImages || stackImages.length === 0) return;
+
     const cols = Math.ceil(Math.sqrt(stackImages.length));
     const cellSize = 220;
     const startX = -(cols * cellSize) / 2 + cellSize / 2;
@@ -467,6 +469,8 @@ export default function DraggableStack({
 
   // Collect images to center
   const handleCollect = useCallback(() => {
+    if (!stackImages || stackImages.length === 0) return;
+
     const newTransforms = stackImages.map((_, index) => ({
       ...transforms[index],
       x: seededRandom(index * 321) * 10 - 5,
@@ -585,30 +589,11 @@ export default function DraggableStack({
         sectionRef.current.colorChangeState = false;
       }
 
-      // 🔍 DEBUG LOGS
-      console.log("🎨 DraggableStack Scroll Debug:", {
-        visibilityPercentage: visibilityPercentage.toFixed(2),
-        shouldActivateColor,
-        currentColorChangeState: sectionRef.current.colorChangeState,
-        storedColorOnRef: sectionRef.current.selectedColor,
-        selectedColorState: selectedColor,
-        willTriggerChange:
-          shouldActivateColor !== sectionRef.current.colorChangeState,
-      });
-
       // Only trigger if state actually changed
       if (shouldActivateColor !== sectionRef.current.colorChangeState) {
         sectionRef.current.colorChangeState = shouldActivateColor;
         // Use the stored selectedColor from ref
         const currentColor = sectionRef.current.selectedColor;
-
-        // 🔍 DEBUG LOG WHEN CHANGING
-        console.log("🚀 DraggableStack calling setBackgroundColor:", {
-          shouldActivateColor,
-          currentColor,
-          callingWith:
-            shouldActivateColor && currentColor ? currentColor : null,
-        });
 
         if (shouldActivateColor && currentColor) {
           setBackgroundColor(currentColor);
@@ -628,12 +613,11 @@ export default function DraggableStack({
   useEffect(() => {
     if (!selectedColor || !sectionRef.current) return;
     sectionRef.current.selectedColor = selectedColor;
-    console.log("💾 Stored color on ref:", selectedColor);
   }, [selectedColor]);
 
   // Apply scroll-based spreading to transforms (only if user hasn't interacted)
   useEffect(() => {
-    if (hasInteracted) return; // Don't override user interactions
+    if (hasInteracted || !stackImages || stackImages.length === 0) return; // Don't override user interactions
 
     const newTransforms = stackImages.map((_, index) => {
       const target = spreadTargets.current[index];
@@ -659,7 +643,6 @@ export default function DraggableStack({
 
   const handleColorChange = useCallback(
     (color) => {
-      console.log("🎨 User clicked color button:", color);
       setSelectedColor(color);
       // Manually apply color if section is in view
       if (sectionRef.current) {
@@ -673,14 +656,7 @@ export default function DraggableStack({
         );
         const isScrolledIntoSection = rect.top < windowHeight;
 
-        console.log("🎨 Manual color change check:", {
-          visibilityPercentage: visibilityPercentage.toFixed(2),
-          isScrolledIntoSection,
-          willApply: visibilityPercentage >= 0.6 && isScrolledIntoSection,
-        });
-
         if (visibilityPercentage >= 0.6 && isScrolledIntoSection) {
-          console.log("🚀 Manual setBackgroundColor:", color);
           setBackgroundColor(color);
         }
       }
@@ -691,7 +667,6 @@ export default function DraggableStack({
   // Cleanup
   useEffect(() => {
     return () => {
-      console.log("🧹 DraggableStack cleanup - resetting background");
       setBackgroundColor(null);
       document.body.style.backgroundColor = "";
       document.body.style.color = "";

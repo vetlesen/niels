@@ -41,17 +41,13 @@ function VideoSphere({ videoUrl, videoRef, isHLS }) {
         videoTexture.format = THREE.RGBAFormat;
 
         setTexture(videoTexture);
-        console.log("✓ Video texture created");
 
         // Check if it's an HLS stream
         if (videoUrl.includes(".m3u8") || isHLS) {
-          console.log("Loading HLS stream from Mux...");
-
           // Use HLS.js for better quality control
           const Hls = (await import("hls.js")).default;
 
           if (Hls.isSupported()) {
-            console.log("Using HLS.js for quality control");
             hls = new Hls({
               enableWorker: true,
               lowLatencyMode: false,
@@ -73,17 +69,7 @@ function VideoSphere({ videoUrl, videoRef, isHLS }) {
             hls.attachMedia(video);
 
             hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-              console.log("✓ HLS manifest loaded");
-              console.log(`Available quality levels: ${data.levels.length}`);
-
-              // Log available qualities
-              data.levels.forEach((level, index) => {
-                console.log(
-                  `Level ${index}: ${level.width}x${
-                    level.height
-                  } @ ${Math.round(level.bitrate / 1000)}kbps`
-                );
-              });
+              // HLS manifest loaded successfully
             });
 
             hls.on(Hls.Events.ERROR, (event, data) => {
@@ -111,7 +97,6 @@ function VideoSphere({ videoUrl, videoRef, isHLS }) {
             });
           } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
             // Fallback to native HLS if HLS.js not supported
-            console.log("Using native HLS support (fallback)");
             video.src = videoUrl;
             video.load();
           } else {
@@ -121,7 +106,6 @@ function VideoSphere({ videoUrl, videoRef, isHLS }) {
           }
         } else {
           // Regular video file (MP4, WebM, etc.)
-          console.log("Loading regular video file...");
           video.src = videoUrl;
           video.load(); // Explicitly load the video
         }
@@ -196,7 +180,6 @@ export default function Video360Player({ videoUrl, isHLS = false }) {
           })
           .catch((error) => {
             // Autoplay blocked - this is expected on mobile
-            console.log("Autoplay blocked, user must interact to play");
             setIsPlaying(false);
           });
       }
