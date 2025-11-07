@@ -379,6 +379,8 @@ export default function DraggableStack({
   stackImages = [],
   imagePalettes = [],
   imagePalette,
+  onRandomize,
+  isRandomizing = false,
 }) {
   const { setBackgroundColor } = useTheme();
   const sectionRef = useRef(null);
@@ -801,7 +803,15 @@ export default function DraggableStack({
               </div>
             </div>
           )}
-          <button className="col-start-11 text-sm">Random</button>
+          {onRandomize && (
+            <button
+              className="col-start-11 text-sm opacity-90 hover:opacity-100 transition-opacity disabled:opacity-50"
+              onClick={onRandomize}
+              disabled={isRandomizing}
+            >
+              {isRandomizing ? "Loading..." : "Random"}
+            </button>
+          )}
         </div>
       </div>
 

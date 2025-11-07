@@ -2,7 +2,7 @@ import { getWorkBySlug } from "../../../queries/getWorkBySlug";
 import ClientMuxPlayer from "../../../components/ClientMuxPlayer";
 import { PortableText } from "next-sanity";
 import Link from "next/link";
-import DraggableStack from "../../../components/DraggableStack";
+import DraggableStackWrapper from "../../../components/DraggableStackWrapper";
 import WorkPasswordWrapper from "../../../components/WorkPasswordWrapper";
 import { notFound } from "next/navigation";
 
@@ -176,14 +176,16 @@ export default async function WorkDetail({ params, searchParams }) {
             </div>
           </div>
         </div>
-        <DraggableStack
-          stackImages={work.stack}
-          imagePalettes={[
+        <DraggableStackWrapper
+          initialStackImages={work.stack}
+          initialImagePalettes={[
             work.colorOverwrite,
             work.imagePalette0,
             work.imagePalette1,
             work.imagePalette2,
           ]}
+          slug={slug}
+          stackCount={work.stackCount}
         />
       </main>
     </WorkPasswordWrapper>
