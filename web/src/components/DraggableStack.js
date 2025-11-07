@@ -56,6 +56,11 @@ function DraggableImage({
   const [initialRotation, setInitialRotation] = useState(0);
   const lastClickTimeRef = useRef(0);
 
+  // Performance optimization refs
+  const lastScaleRef = useRef(1);
+  const lastRotationRef = useRef(0);
+  const smoothingFactorRef = useRef(0.3);
+
   // Use base positions from parent array
   useEffect(() => {
     if (basePositions && basePositions[index]) {
@@ -240,10 +245,18 @@ function DraggableImage({
     // Handle pinch-to-zoom and rotate with two fingers
     if (e.touches.length === 2) {
       e.preventDefault();
+      e.stopPropagation();
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
       const distance = getDistance(touch1, touch2);
       const angle = getAngle(touch1, touch2);
+
+      // Stop any ongoing dragging or settling
+      setIsDragging(false);
+      setIsSettling(false);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
 
       setIsPinching(true);
       setInitialDistance(distance);
@@ -306,24 +319,52 @@ function DraggableImage({
   const handleTouchMove = (e) => {
     e.preventDefault();
 
-    // Handle pinch-to-zoom and rotate
-    if (isPinching && e.touches.length === 2) {
+    // Handle pinch-to-zoom and rotate - prioritize this over dragging
+    if (e.touches.length === 2) {
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
       const currentDistance = getDistance(touch1, touch2);
       const currentAngle = getAngle(touch1, touch2);
 
-      if (initialDistance > 0) {
-        // Handle scaling
-        const scaleChange = currentDistance / initialDistance;
-        const newScale = Math.max(0.5, Math.min(3, initialScale * scaleChange));
-        setScale(newScale);
-        setIsZoomed(newScale > 1);
+      // If not already pinching, start pinching
+      if (!isPinching) {
+        setIsPinching(true);
+        setInitialDistance(currentDistance);
+        setInitialScale(scale);
+        setInitialAngle(currentAngle);
+        setInitialRotation(rotation);
+        setIsDragging(false); // Stop dragging when pinching starts
+        onBringToFront(index);
+        return;
+      }
 
-        // Handle rotation
+      if (initialDistance > 0) {
+        // Handle scaling with smoother response and throttling
+        const scaleChange = currentDistance / initialDistance;
+        const targetScale = Math.max(
+          0.5,
+          Math.min(3, initialScale * scaleChange)
+        );
+
+        // Smooth scaling with interpolation
+        const smoothedScale =
+          lastScaleRef.current +
+          (targetScale - lastScaleRef.current) * smoothingFactorRef.current;
+        lastScaleRef.current = smoothedScale;
+        setScale(smoothedScale);
+        setIsZoomed(smoothedScale > 1);
+
+        // Handle rotation with smoother interpolation and reduced sensitivity
         const angleDifference = currentAngle - initialAngle;
-        const newRotation = initialRotation + angleDifference;
-        setRotation(newRotation);
+        const targetRotation = initialRotation + angleDifference * 0.5; // Further reduce rotation sensitivity
+
+        // Smooth rotation with interpolation
+        const smoothedRotation =
+          lastRotationRef.current +
+          (targetRotation - lastRotationRef.current) *
+            smoothingFactorRef.current;
+        lastRotationRef.current = smoothedRotation;
+        setRotation(smoothedRotation);
       }
       return;
     }
@@ -368,7 +409,7 @@ function DraggableImage({
   };
 
   useEffect(() => {
-    if (isDragging) {
+    if (isDragging || isPinching) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
       document.addEventListener("touchmove", handleTouchMove, {
@@ -385,7 +426,7 @@ function DraggableImage({
       document.removeEventListener("touchend", handleTouchEnd);
       document.removeEventListener("touchcancel", handleTouchEnd);
     };
-  }, [isDragging, dragStart, initialPosition]);
+  }, [isDragging, isPinching, dragStart, initialPosition]);
 
   // Calculate spread position based on scroll with random distribution
   const spreadAmount = scrollProgress * 300; // Increased spread distance
@@ -414,7 +455,7 @@ function DraggableImage({
         zIndex: zIndex,
         touchAction: "none",
         transition:
-          isDragging || isSettling
+          isDragging || isSettling || isPinching
             ? "none"
             : "transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
       }}

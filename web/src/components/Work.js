@@ -195,26 +195,26 @@ function WorkItem({
             <h3
               className={`transition-colors duration-500 ease-in-out ${
                 isShowcase
-                  ? "text-gray-900"
+                  ? "text-black"
                   : activeFilter === "narrative"
                   ? "text-white"
                   : activeFilter === "commercial"
                   ? ""
-                  : "text-gray-900"
+                  : "text-black"
               }`}
             >
               {item.name}
             </h3>
             {item.title && (
               <h4
-                className={`transition-colors duration-500 ease-in-out font-normal ${
+                className={`transition-colors duration-500 ease-in-out font-normal truncate max-w-[200px] md:max-w-fit ${
                   isShowcase
-                    ? "text-gray-900"
+                    ? "text-black"
                     : activeFilter === "narrative"
                     ? "text-white"
                     : activeFilter === "commercial"
                     ? " "
-                    : "text-gray-900"
+                    : "text-black"
                 }`}
               >
                 {item.title}
@@ -222,14 +222,14 @@ function WorkItem({
             )}
             {item.type && (
               <p
-                className={`opacity-60 transition-colors duration-500 ease-in-out font-normal ${
+                className={`opacity-40 transition-colors duration-500 ease-in-out font-normal hidden md:block ${
                   isShowcase
-                    ? "text-gray-900"
+                    ? "text-black"
                     : activeFilter === "narrative"
                     ? "text-white"
                     : activeFilter === "commercial"
                     ? " "
-                    : "text-gray-900"
+                    : "text-black"
                 }`}
               >
                 {item.type}
@@ -237,28 +237,28 @@ function WorkItem({
             )}
             {item.year && (
               <p
-                className={`opacity-60 transition-colors duration-500 ease-in-out font-normal ${
+                className={`opacity-40 transition-colors duration-500 ease-in-out font-normal ${
                   isShowcase
-                    ? "text-gray-900"
+                    ? "text-black"
                     : activeFilter === "narrative"
                     ? "text-white"
                     : activeFilter === "commercial"
                     ? ""
-                    : "text-gray-900"
+                    : "text-black"
                 }`}
               >
                 {item.year}
               </p>
             )}
             <p
-              className={`opacity-60 transition-colors duration-500 ease-in-out font-normal ${
+              className={`opacity-40 transition-colors duration-500 ease-in-out font-normal ${
                 isShowcase
-                  ? "text-gray-900"
+                  ? "text-black"
                   : activeFilter === "narrative"
                   ? "text-white"
                   : activeFilter === "commercial"
                   ? ""
-                  : "text-gray-900"
+                  : "text-black"
               }`}
             >
               {formatDuration(item.video?.asset?.data?.duration)}
