@@ -766,8 +766,8 @@ export default function DraggableStack({
           )}
         </div>
       </div>
-      <section ref={sectionRef} className="min-h-screen overflow-hidden px-4">
-        <div className="relative w-full min-h-[120svh] flex flex-col items-center justify-center overflow-visible border-b">
+      <section ref={sectionRef} className="min-h-screen px-4 overflow-hidden">
+        <div className="relative w-full min-h-[120svh] flex flex-col items-center justify-center">
           <div className="relative w-full h-full flex items-center justify-center ">
             {safeStackImages.map((image, index) => (
               <DraggableImage
@@ -785,6 +785,7 @@ export default function DraggableStack({
           </div>
         </div>
       </section>
+      <div className="mx-4 border-b" />
     </>
   );
 }

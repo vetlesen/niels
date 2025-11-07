@@ -29,6 +29,8 @@ export default {
       name: "name",
       title: "Name",
       type: "string",
+      description:
+        "Name of the client. This is displayed first (Name, Title, Type, Year, Duration)",
     },
     {
       name: "slug",
@@ -47,17 +49,18 @@ export default {
       type: "boolean",
       default: false,
     },
-    {
-      name: "password",
-      title: "Password",
-      description:
-        "Password required to view this work when it's hidden. Only applies when 'Hidden on frontpage' is true.",
-      type: "string",
-      hidden: ({ document }) => !document?.hidden,
-    },
+    // {
+    //   name: "password",
+    //   title: "Password",
+    //   description:
+    //     "Password required to view this work when it's hidden. Only applies when 'Hidden on frontpage' is true.",
+    //   type: "string",
+    //   hidden: ({ document }) => !document?.hidden,
+    // },
     {
       name: "title",
       title: "Title",
+      description: "Title on the project (optional)",
       type: "string",
     },
     {
@@ -134,6 +137,19 @@ export default {
       of: [
         {
           type: "object",
+          preview: {
+            select: {
+              role: "role",
+              names: "names",
+            },
+            prepare(selection) {
+              const { role, names } = selection;
+              return {
+                title: role,
+                subtitle: names ? names.join(", ") : "",
+              };
+            },
+          },
           fields: [
             {
               name: "role",
