@@ -129,12 +129,27 @@ function DraggableImage({
     setIsZoomed(!isZoomed);
     onBringToFront(index);
 
-    // Update the base position to current position when scaling
+    // Update the base position to current VISUAL position when scaling
     if (basePositions && basePositions[index]) {
+      // Calculate current visual position (including scroll spreading)
+      const spreadAmount = scrollProgress * 300;
+      const randomAngle = seededRandom(index * 1337) * Math.PI * 2;
+      const randomDistance = seededRandom(index * 2674) * spreadAmount;
+      const randomOffsetX = seededRandom(index * 4011) * 100 - 50;
+      const randomOffsetY = seededRandom(index * 5348) * 100 - 50;
+      const spreadX = Math.cos(randomAngle) * randomDistance + randomOffsetX;
+      const spreadY = Math.sin(randomAngle) * randomDistance + randomOffsetY;
+
+      const isCollected = position.x === 0 && position.y === 0;
+      const currentVisualX =
+        position.x + (isCollected ? spreadX * 0.1 : spreadX);
+      const currentVisualY =
+        position.y + (isCollected ? spreadY * 0.1 : spreadY);
+
       const updatedPositions = [...basePositions];
       updatedPositions[index] = {
-        x: position.x,
-        y: position.y,
+        x: currentVisualX,
+        y: currentVisualY,
         rotation: rotation,
       };
       onPositionUpdate(updatedPositions);
@@ -455,8 +470,12 @@ function DraggableImage({
   const spreadX = Math.cos(randomAngle) * randomDistance + randomOffsetX;
   const spreadY = Math.sin(randomAngle) * randomDistance + randomOffsetY;
 
-  const finalX = position.x + spreadX;
-  const finalY = position.y + spreadY;
+  // Check if image is in collected state (at center)
+  const isCollected = position.x === 0 && position.y === 0;
+
+  // Reduce or disable spreading for collected images
+  const finalX = position.x + (isCollected ? spreadX * 0.1 : spreadX);
+  const finalY = position.y + (isCollected ? spreadY * 0.1 : spreadY);
 
   return (
     <div
@@ -477,6 +496,22 @@ function DraggableImage({
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
     >
+      {/* Debug position indicator */}
+      <div
+        className="absolute top-1/2 left-1/2 w-2 h-2 bg-red-500 rounded-full z-50 pointer-events-none"
+        style={{
+          transform: "translate(-50%, -50%)",
+        }}
+      />
+      <div
+        className="absolute top-1/2 left-1/2 text-xs text-red-500 font-mono z-50 pointer-events-none whitespace-nowrap"
+        style={{
+          transform: "translate(-50%, -120%)",
+        }}
+      >
+        {`${Math.round(finalX)},${Math.round(finalY)}`}
+      </div>
+
       {image?.asset?.url ? (
         <img
           src={image.asset.url}
@@ -738,6 +773,8 @@ export default function DraggableStack({
       };
     });
 
+    console.log("Collect - New positions:", newPositions);
+
     // Update the base positions array immediately to affect scroll spreading
     setBasePositions(newPositions);
   };
@@ -754,8 +791,8 @@ export default function DraggableStack({
 
   const getCollectedPosition = (index) => {
     return {
-      x: 0, // Center all images at origin
-      y: 0, // Center all images at origin
+      x: 0, // All images at exact center
+      y: 0, // All images at exact center
     };
   };
 
