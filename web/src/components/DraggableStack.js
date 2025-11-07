@@ -337,7 +337,22 @@ function DraggableImage({
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
     >
-      {image?.asset?.url ? (
+      {image?.asset?.playbackId ? (
+        // VIDEO
+        <VideoThumbnail
+          playbackId={image.asset.playbackId}
+          timestamp={image.timestamp || "0:00"}
+          isHovered={true}
+          className="pointer-events-none block"
+          style={{
+            width: "200px",
+            height: "300px",
+          }}
+          maxResolution="480p"
+          loopDuration={60}
+        />
+      ) : image?.asset?.url ? (
+        // IMAGE
         <img
           src={image.asset.url}
           alt={`Stack image ${index + 1}`}
@@ -349,21 +364,6 @@ function DraggableImage({
             width: "auto",
             height: "auto",
           }}
-        />
-      ) : image?.asset?.playbackId ? (
-        <VideoThumbnail
-          playbackId={image.asset.playbackId}
-          timestamp={image.timestamp || "0:00"}
-          isHovered={true}
-          className="pointer-events-none block"
-          style={{
-            maxWidth: "200px",
-            maxHeight: "300px",
-            width: "auto",
-            height: "auto",
-          }}
-          maxResolution="270p"
-          loopDuration={60}
         />
       ) : (
         <div className="w-48 h-64 bg-gray-100 flex items-center justify-center text-gray-500">

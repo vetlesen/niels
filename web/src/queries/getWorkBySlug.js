@@ -1,7 +1,6 @@
 import { client } from "../lib/client";
 
 export async function getWorkBySlug(slug, randomSeed = null) {
-  // If randomSeed is provided, use it to get a random selection
   const stackSlice =
     randomSeed !== null
       ? `stack[${randomSeed}...${randomSeed + 20}]`
@@ -19,34 +18,9 @@ export async function getWorkBySlug(slug, randomSeed = null) {
     password,
     video {
       asset-> {
-        _id,
         playbackId,
-        assetId,
-        status,
         data {
-          aspect_ratio,
-        },
-      },
-    },
-    thumbnails[] {
-      timestamp,
-      type,
-      image {
-        asset-> {
-          _id,
-          url
-        }
-      },
-      video {
-        asset-> {
-          _id,
-          playbackId,
-          assetId,
-          status,
-          data {
-            duration,
-            aspect_ratio
-          }
+          aspect_ratio
         }
       }
     },
@@ -55,45 +29,20 @@ export async function getWorkBySlug(slug, randomSeed = null) {
       names
     },
     awards[]-> {
-      _id,
       name,
-      slug,
-      organization,
-      year,
-      category,
-      status,
-      description,
-      url
+      year
     },
-    info[]{
-      ...,
-      markDefs[]{
-        ...,
-        _type == "internalLink" => {
-          ...,
-          reference-> {
-            _id,
-            name,
-            slug
-          }
-        }
-      }
-    },
+    info,
     "stackCount": count(stack),
-    ${stackSlice} {
+    ${stackSlice}[] {
       _key,
-      _type,
+      timestamp,
       asset-> {
         _id,
+        _type,
         url,
         playbackId,
-        assetId,
-        status,
         metadata {
-          dimensions {
-            width,
-            height
-          },
           palette {
             dominant,
             vibrant,
@@ -112,8 +61,13 @@ export async function getWorkBySlug(slug, randomSeed = null) {
     colorOverwrite
   }`;
 
+  console.log("GROQ Query:", query);
+  console.log("Query params:", { slug, randomSeed });
+
   try {
     const work = await client.fetch(query, { slug });
+    console.log("Fetched work:", work);
+    console.log("Stack items:", work?.stack);
     return work;
   } catch (error) {
     console.error("Error fetching work by slug:", error);
