@@ -7,7 +7,12 @@ import { muxInput } from "sanity-plugin-mux-input";
 import { orderableDocumentListDeskItem } from "@sanity/orderable-document-list";
 import { schemaTypes } from "./schemaTypes";
 
-import { SparklesIcon, CogIcon, VideoIcon } from "@sanity/icons";
+import {
+  SparklesIcon,
+  CogIcon,
+  VideoIcon,
+  EarthGlobeIcon,
+} from "@sanity/icons";
 
 // Define the actions that should be available for singleton documents
 const singletonActions = new Set(["publish", "discardChanges", "restore"]);
@@ -49,10 +54,19 @@ export default defineConfig({
               .title("Awards")
               .child(S.documentTypeList("awards").title("Awards"))
               .icon(SparklesIcon),
+            // Showcase list
+            S.listItem()
+              .title("Showcase")
+              .child(S.documentTypeList("showcase").title("Showcase"))
+              .icon(EarthGlobeIcon),
+            // Divider
+            S.divider(),
             // Add other document types as needed
             ...S.documentTypeListItems().filter(
               (listItem) =>
-                !["work", "awards", "settings"].includes(listItem.getId()),
+                !["work", "awards", "settings", "showcase"].includes(
+                  listItem.getId(),
+                ),
             ),
           ]);
       },
