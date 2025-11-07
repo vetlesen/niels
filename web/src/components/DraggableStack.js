@@ -128,6 +128,17 @@ function DraggableImage({
     setScale(newScale);
     setIsZoomed(!isZoomed);
     onBringToFront(index);
+
+    // Update the base position to current position when scaling
+    if (basePositions && basePositions[index]) {
+      const updatedPositions = [...basePositions];
+      updatedPositions[index] = {
+        x: position.x,
+        y: position.y,
+        rotation: rotation,
+      };
+      onPositionUpdate(updatedPositions);
+    }
   };
 
   // Get distance between two touch points
@@ -743,8 +754,8 @@ export default function DraggableStack({
 
   const getCollectedPosition = (index) => {
     return {
-      x: index * 3 + seededRandom(index * 321) * 12 - 6,
-      y: index * 3 + seededRandom(index * 654) * 12 - 6,
+      x: 0, // Center all images at origin
+      y: 0, // Center all images at origin
     };
   };
 
