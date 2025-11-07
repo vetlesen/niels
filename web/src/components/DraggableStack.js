@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import VideoThumbnail from "./VideoThumbnail";
 
-// Deterministic pseudo-random function based on seed
+// Deterministic pseudo-random function
 function seededRandom(seed) {
   const x = Math.sin(seed) * 10000;
   return x - Math.floor(x);
@@ -15,373 +15,307 @@ function DraggableImage({
   image,
   index,
   totalImages,
+  position,
+  rotation,
+  scale,
+  onUpdateTransform,
   onBringToFront,
-  cardRefs,
-  scrollProgress,
-  basePositions,
-  onPositionUpdate,
+  zIndex,
 }) {
   const imageRef = useRef(null);
-  const velocityRef = useRef({ x: 0, y: 0 });
-  const lastPositionRef = useRef({ x: 0, y: 0 });
-  const lastTimeRef = useRef(Date.now());
-  const animationFrameRef = useRef(null);
-
-  // Store ref in parent's array
-  useEffect(() => {
-    if (cardRefs && cardRefs.current) {
-      cardRefs.current[index] = imageRef;
-    }
-  }, [index, cardRefs]);
-
   const [isDragging, setIsDragging] = useState(false);
-  const [isSettling, setIsSettling] = useState(false);
-  const [isZoomed, setIsZoomed] = useState(false);
-  const [scale, setScale] = useState(1);
   const [isPinching, setIsPinching] = useState(false);
+  const [dragState, setDragState] = useState(null);
+  const [pinchState, setPinchState] = useState(null);
 
-  const [position, setPosition] = useState({
-    x: index * 5,
-    y: index * 5,
-  });
-  const [rotation, setRotation] = useState(index * 2 - 4);
-  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-  const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
-  const [zIndex, setZIndex] = useState(totalImages - index);
+  // Physics state
+  const velocityRef = useRef({ x: 0, y: 0 });
+  const animationFrameRef = useRef(null);
+  const lastPositionRef = useRef({ x: position.x, y: position.y });
+  const lastTimeRef = useRef(Date.now());
 
-  // Pinch gesture state
-  const [initialDistance, setInitialDistance] = useState(0);
-  const [initialScale, setInitialScale] = useState(1);
-  const lastClickTimeRef = useRef(0);
+  // Double-tap detection
+  const lastTapTimeRef = useRef(0);
 
-  // Use base positions from parent array
-  useEffect(() => {
-    if (basePositions && basePositions[index]) {
-      const basePos = basePositions[index];
-      setPosition({ x: basePos.x, y: basePos.y });
-      setRotation(basePos.rotation);
-      lastPositionRef.current = { x: basePos.x, y: basePos.y };
-    }
-  }, [basePositions, index]);
+  // Handle double tap/click for zoom
+  const handleDoubleTap = useCallback(() => {
+    const newScale = scale > 1 ? 1 : 2;
+    onUpdateTransform(index, { scale: newScale });
+    onBringToFront(index);
+  }, [scale, index, onUpdateTransform, onBringToFront]);
 
-  // Enhanced physics simulation for momentum
-  const applyMomentum = () => {
-    if (!isSettling) return;
+  // Start drag
+  const startDrag = useCallback(
+    (clientX, clientY) => {
+      // Stop any ongoing animation
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
 
-    const friction = 0.9; // Slightly more slide
-    const rotationFriction = 0.9;
-    const minVelocity = 0.15;
-    const minRotationVelocity = 0.1;
-
-    velocityRef.current.x *= friction;
-    velocityRef.current.y *= friction;
-
-    // Apply rotation momentum based on horizontal velocity
-    const rotationMomentum = velocityRef.current.x * 0.1;
-    setRotation((prev) => prev + rotationMomentum);
-
-    if (
-      Math.abs(velocityRef.current.x) < minVelocity &&
-      Math.abs(velocityRef.current.y) < minVelocity
-    ) {
-      setIsSettling(false);
       velocityRef.current = { x: 0, y: 0 };
-      return;
-    }
+      lastPositionRef.current = { x: position.x, y: position.y };
+      lastTimeRef.current = Date.now();
 
-    setPosition((prev) => ({
-      x: prev.x + velocityRef.current.x,
-      y: prev.y + velocityRef.current.y,
-    }));
+      setDragState({
+        startX: clientX,
+        startY: clientY,
+        initialX: position.x,
+        initialY: position.y,
+        initialRotation: rotation,
+      });
+      setIsDragging(true);
+      onBringToFront(index);
+    },
+    [position, rotation, index, onBringToFront]
+  );
 
-    animationFrameRef.current = requestAnimationFrame(applyMomentum);
-  };
+  // Update drag position
+  const updateDrag = useCallback(
+    (clientX, clientY) => {
+      if (!dragState) return;
 
-  useEffect(() => {
-    if (isSettling) {
+      const now = Date.now();
+      const deltaTime = Math.max(1, now - lastTimeRef.current);
+      lastTimeRef.current = now;
+
+      const deltaX = clientX - dragState.startX;
+      const deltaY = clientY - dragState.startY;
+
+      const newX = dragState.initialX + deltaX;
+      const newY = dragState.initialY + deltaY;
+
+      // Calculate velocity for momentum
+      velocityRef.current = {
+        x: ((newX - lastPositionRef.current.x) / deltaTime) * 16,
+        y: ((newY - lastPositionRef.current.y) / deltaTime) * 16,
+      };
+
+      lastPositionRef.current = { x: newX, y: newY };
+
+      // Add subtle rotation based on horizontal movement
+      const rotationDelta = deltaX * 0.05;
+      const newRotation = dragState.initialRotation + rotationDelta;
+
+      onUpdateTransform(index, {
+        x: newX,
+        y: newY,
+        rotation: newRotation,
+      });
+    },
+    [dragState, index, onUpdateTransform]
+  );
+
+  // End drag and apply momentum
+  const endDrag = useCallback(() => {
+    setIsDragging(false);
+    setDragState(null);
+
+    // Apply momentum if velocity is significant
+    const velocity = velocityRef.current;
+    if (Math.abs(velocity.x) > 1 || Math.abs(velocity.y) > 1) {
+      const applyMomentum = () => {
+        const friction = 0.92;
+        const minVelocity = 0.5;
+
+        velocity.x *= friction;
+        velocity.y *= friction;
+
+        if (
+          Math.abs(velocity.x) < minVelocity &&
+          Math.abs(velocity.y) < minVelocity
+        ) {
+          velocity.x = 0;
+          velocity.y = 0;
+          return;
+        }
+
+        onUpdateTransform(index, {
+          x: position.x + velocity.x,
+          y: position.y + velocity.y,
+          rotation: rotation + velocity.x * 0.05,
+        });
+
+        animationFrameRef.current = requestAnimationFrame(applyMomentum);
+      };
+
       animationFrameRef.current = requestAnimationFrame(applyMomentum);
     }
+  }, [index, position, rotation, onUpdateTransform]);
+
+  // Mouse handlers
+  const handleMouseDown = useCallback(
+    (e) => {
+      e.preventDefault();
+
+      // Check for double-click
+      const now = Date.now();
+      if (now - lastTapTimeRef.current < 300) {
+        handleDoubleTap();
+        return;
+      }
+      lastTapTimeRef.current = now;
+
+      startDrag(e.clientX, e.clientY);
+    },
+    [startDrag, handleDoubleTap]
+  );
+
+  // Touch handlers
+  const handleTouchStart = useCallback(
+    (e) => {
+      e.preventDefault();
+
+      if (e.touches.length === 2) {
+        // Start pinch gesture
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+
+        const dx = touch2.clientX - touch1.clientX;
+        const dy = touch2.clientY - touch1.clientY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+        setPinchState({
+          initialDistance: distance,
+          initialAngle: angle,
+          initialScale: scale,
+          initialRotation: rotation,
+        });
+        setIsPinching(true);
+        setIsDragging(false);
+        setDragState(null);
+        onBringToFront(index);
+        return;
+      }
+
+      // Check for double-tap
+      const now = Date.now();
+      if (now - lastTapTimeRef.current < 300) {
+        handleDoubleTap();
+        return;
+      }
+      lastTapTimeRef.current = now;
+
+      const touch = e.touches[0];
+      startDrag(touch.clientX, touch.clientY);
+    },
+    [scale, rotation, index, startDrag, handleDoubleTap, onBringToFront]
+  );
+
+  const handleTouchMove = useCallback(
+    (e) => {
+      e.preventDefault();
+
+      if (e.touches.length === 2 && (isPinching || !isDragging)) {
+        const touch1 = e.touches[0];
+        const touch2 = e.touches[1];
+
+        const dx = touch2.clientX - touch1.clientX;
+        const dy = touch2.clientY - touch1.clientY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+        if (!pinchState) {
+          // Initialize pinch if not already
+          setPinchState({
+            initialDistance: distance,
+            initialAngle: angle,
+            initialScale: scale,
+            initialRotation: rotation,
+          });
+          setIsPinching(true);
+          setIsDragging(false);
+          setDragState(null);
+          return;
+        }
+
+        // Calculate scale
+        const scaleRatio = distance / pinchState.initialDistance;
+        const newScale = Math.max(
+          0.5,
+          Math.min(3, pinchState.initialScale * scaleRatio)
+        );
+
+        // Calculate rotation
+        const angleDelta = angle - pinchState.initialAngle;
+        const newRotation = pinchState.initialRotation + angleDelta * 0.5;
+
+        onUpdateTransform(index, {
+          scale: newScale,
+          rotation: newRotation,
+        });
+        return;
+      }
+
+      if (isDragging && e.touches.length === 1) {
+        const touch = e.touches[0];
+        updateDrag(touch.clientX, touch.clientY);
+      }
+    },
+    [
+      isDragging,
+      isPinching,
+      pinchState,
+      scale,
+      rotation,
+      index,
+      updateDrag,
+      onUpdateTransform,
+    ]
+  );
+
+  const handleTouchEnd = useCallback(() => {
+    if (isPinching) {
+      setIsPinching(false);
+      setPinchState(null);
+    } else {
+      endDrag();
+    }
+  }, [isPinching, endDrag]);
+
+  // Global event listeners for drag/pinch
+  useEffect(() => {
+    if (isDragging) {
+      const handleMouseMove = (e) => updateDrag(e.clientX, e.clientY);
+      const handleMouseUp = endDrag;
+
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+
+      return () => {
+        document.removeEventListener("mousemove", handleMouseMove);
+        document.removeEventListener("mouseup", handleMouseUp);
+      };
+    }
+  }, [isDragging, updateDrag, endDrag]);
+
+  useEffect(() => {
+    if (isDragging || isPinching) {
+      const handleTouchMoveGlobal = (e) => handleTouchMove(e);
+      const handleTouchEndGlobal = handleTouchEnd;
+
+      document.addEventListener("touchmove", handleTouchMoveGlobal, {
+        passive: false,
+      });
+      document.addEventListener("touchend", handleTouchEndGlobal);
+      document.addEventListener("touchcancel", handleTouchEndGlobal);
+
+      return () => {
+        document.removeEventListener("touchmove", handleTouchMoveGlobal);
+        document.removeEventListener("touchend", handleTouchEndGlobal);
+        document.removeEventListener("touchcancel", handleTouchEndGlobal);
+      };
+    }
+  }, [isDragging, isPinching, handleTouchMove, handleTouchEnd]);
+
+  // Cleanup animation frame on unmount
+  useEffect(() => {
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isSettling]);
-
-  // Double-click zoom functionality
-  const handleDoubleClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const newScale = isZoomed ? 1 : 2;
-    setScale(newScale);
-    setIsZoomed(!isZoomed);
-    onBringToFront(index);
-  };
-
-  // Get distance between two touch points
-  const getDistance = (touch1, touch2) => {
-    const dx = touch1.clientX - touch2.clientX;
-    const dy = touch1.clientY - touch2.clientY;
-    return Math.sqrt(dx * dx + dy * dy);
-  };
-
-  const handleMouseDown = (e) => {
-    e.preventDefault();
-
-    // Handle double-click detection
-    const now = Date.now();
-    const timeDiff = now - lastClickTimeRef.current;
-    if (timeDiff < 300) {
-      handleDoubleClick(e);
-      return;
-    }
-    lastClickTimeRef.current = now;
-
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-    setIsSettling(false);
-    velocityRef.current = { x: 0, y: 0 };
-    lastTimeRef.current = Date.now();
-
-    // Calculate spread position based on scroll with random distribution
-    const spreadAmount = scrollProgress * 300; // Increased spread distance
-
-    // Use seeded random for consistent but random spread positions
-    const randomAngle = seededRandom(index * 1337) * Math.PI * 2;
-    const randomDistance = seededRandom(index * 2674) * spreadAmount;
-    const randomOffsetX = seededRandom(index * 4011) * 100 - 50; // Additional random offset
-    const randomOffsetY = seededRandom(index * 5348) * 100 - 50;
-
-    const spreadX = Math.cos(randomAngle) * randomDistance + randomOffsetX;
-    const spreadY = Math.sin(randomAngle) * randomDistance + randomOffsetY;
-
-    // Get the current visual position from the transform
-    if (imageRef.current) {
-      const transform = imageRef.current.style.transform;
-      const match = transform.match(
-        /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
-      );
-      if (match) {
-        const currentX = parseFloat(match[1]) - spreadX;
-        const currentY = parseFloat(match[2]) - spreadY;
-        const currentRotation = parseFloat(match[3]);
-        setPosition({ x: currentX, y: currentY });
-        setRotation(currentRotation);
-        setInitialPosition({ x: currentX, y: currentY });
-        lastPositionRef.current = { x: currentX, y: currentY };
-      } else {
-        setInitialPosition(position);
-        lastPositionRef.current = position;
-      }
-    } else {
-      setInitialPosition(position);
-      lastPositionRef.current = position;
-    }
-
-    setIsDragging(true);
-    setDragStart({ x: e.clientX, y: e.clientY });
-    onBringToFront(index);
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging) return;
-
-    const now = Date.now();
-    const deltaTime = now - lastTimeRef.current;
-    lastTimeRef.current = now;
-
-    const deltaX = e.clientX - dragStart.x;
-    const deltaY = e.clientY - dragStart.y;
-
-    const newX = initialPosition.x + deltaX;
-    const newY = initialPosition.y + deltaY;
-
-    // Calculate velocity with time-based smoothing
-    const velocityX = (newX - lastPositionRef.current.x) / (deltaTime || 1);
-    const velocityY = (newY - lastPositionRef.current.y) / (deltaTime || 1);
-
-    velocityRef.current = {
-      x: velocityX * 16, // Normalize to ~60fps
-      y: velocityY * 16,
-    };
-
-    lastPositionRef.current = { x: newX, y: newY };
-    setPosition({ x: newX, y: newY });
-
-    // Natural rotation based on horizontal movement
-    const rotationInfluence = velocityX * 0.5;
-    setRotation((prev) => prev + rotationInfluence);
-  };
-
-  const handleMouseUp = () => {
-    setIsDragging(false);
-    // Only apply momentum if velocity is significant
-    if (
-      Math.abs(velocityRef.current.x) > 0.5 ||
-      Math.abs(velocityRef.current.y) > 0.5
-    ) {
-      setIsSettling(true);
-    }
-  };
-
-  // Touch events
-  const handleTouchStart = (e) => {
-    // Handle pinch-to-zoom with two fingers
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
-      const distance = getDistance(touch1, touch2);
-
-      setIsPinching(true);
-      setInitialDistance(distance);
-      setInitialScale(scale);
-      onBringToFront(index);
-      return;
-    }
-
-    const touch = e.touches[0];
-
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-    setIsSettling(false);
-    velocityRef.current = { x: 0, y: 0 };
-    lastTimeRef.current = Date.now();
-
-    // Calculate spread position based on scroll with random distribution (same as mouse)
-    const spreadAmount = scrollProgress * 300; // Increased spread distance
-
-    // Use seeded random for consistent but random spread positions (same as mouse)
-    const randomAngle = seededRandom(index * 1337) * Math.PI * 2;
-    const randomDistance = seededRandom(index * 2674) * spreadAmount;
-    const randomOffsetX = seededRandom(index * 4011) * 100 - 50; // Additional random offset
-    const randomOffsetY = seededRandom(index * 5348) * 100 - 50;
-
-    const spreadX = Math.cos(randomAngle) * randomDistance + randomOffsetX;
-    const spreadY = Math.sin(randomAngle) * randomDistance + randomOffsetY;
-
-    // Get the current visual position from the transform
-    if (imageRef.current) {
-      const transform = imageRef.current.style.transform;
-      const match = transform.match(
-        /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
-      );
-      if (match) {
-        const currentX = parseFloat(match[1]) - spreadX;
-        const currentY = parseFloat(match[2]) - spreadY;
-        const currentRotation = parseFloat(match[3]);
-        setPosition({ x: currentX, y: currentY });
-        setRotation(currentRotation);
-        setInitialPosition({ x: currentX, y: currentY });
-        lastPositionRef.current = { x: currentX, y: currentY };
-      } else {
-        setInitialPosition(position);
-        lastPositionRef.current = position;
-      }
-    } else {
-      setInitialPosition(position);
-      lastPositionRef.current = position;
-    }
-
-    setIsDragging(true);
-    setDragStart({ x: touch.clientX, y: touch.clientY });
-    onBringToFront(index);
-  };
-
-  const handleTouchMove = (e) => {
-    e.preventDefault();
-
-    // Handle pinch-to-zoom
-    if (isPinching && e.touches.length === 2) {
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
-      const currentDistance = getDistance(touch1, touch2);
-
-      if (initialDistance > 0) {
-        const scaleChange = currentDistance / initialDistance;
-        const newScale = Math.max(0.5, Math.min(3, initialScale * scaleChange));
-        setScale(newScale);
-        setIsZoomed(newScale > 1);
-      }
-      return;
-    }
-
-    if (!isDragging) return;
-
-    const touch = e.touches[0];
-    const now = Date.now();
-    const deltaTime = now - lastTimeRef.current;
-    lastTimeRef.current = now;
-
-    const deltaX = touch.clientX - dragStart.x;
-    const deltaY = touch.clientY - dragStart.y;
-
-    const newX = initialPosition.x + deltaX;
-    const newY = initialPosition.y + deltaY;
-
-    const velocityX = (newX - lastPositionRef.current.x) / (deltaTime || 1);
-    const velocityY = (newY - lastPositionRef.current.y) / (deltaTime || 1);
-
-    velocityRef.current = {
-      x: velocityX * 16,
-      y: velocityY * 16,
-    };
-
-    lastPositionRef.current = { x: newX, y: newY };
-    setPosition({ x: newX, y: newY });
-
-    const rotationInfluence = velocityX * 0.5;
-    setRotation((prev) => prev + rotationInfluence);
-  };
-
-  const handleTouchEnd = () => {
-    setIsDragging(false);
-    setIsPinching(false);
-    if (
-      Math.abs(velocityRef.current.x) > 0.5 ||
-      Math.abs(velocityRef.current.y) > 0.5
-    ) {
-      setIsSettling(true);
-    }
-  };
-
-  useEffect(() => {
-    if (isDragging) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-      document.addEventListener("touchmove", handleTouchMove, {
-        passive: false,
-      });
-      document.addEventListener("touchend", handleTouchEnd);
-      document.addEventListener("touchcancel", handleTouchEnd);
-    }
-
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-      document.removeEventListener("touchmove", handleTouchMove);
-      document.removeEventListener("touchend", handleTouchEnd);
-      document.removeEventListener("touchcancel", handleTouchEnd);
-    };
-  }, [isDragging, dragStart, initialPosition]);
-
-  // Calculate spread position based on scroll with random distribution
-  const spreadAmount = scrollProgress * 300; // Increased spread distance
-
-  // Use seeded random for consistent but random spread positions
-  const randomAngle = seededRandom(index * 1337) * Math.PI * 2;
-  const randomDistance = seededRandom(index * 2674) * spreadAmount;
-  const randomOffsetX = seededRandom(index * 4011) * 100 - 50; // Additional random offset
-  const randomOffsetY = seededRandom(index * 5348) * 100 - 50;
-
-  const spreadX = Math.cos(randomAngle) * randomDistance + randomOffsetX;
-  const spreadY = Math.sin(randomAngle) * randomDistance + randomOffsetY;
-
-  const finalX = position.x + spreadX;
-  const finalY = position.y + spreadY;
+  }, []);
 
   return (
     <div
@@ -390,14 +324,15 @@ function DraggableImage({
         isDragging ? "cursor-grabbing" : "cursor-grab"
       }`}
       style={{
-        transform: `translate(${finalX}px, ${finalY}px) rotate(${rotation}deg)`,
+        transform: `translate(${position.x}px, ${position.y}px) rotate(${rotation}deg) scale(${scale})`,
         transformOrigin: "center center",
         zIndex: zIndex,
         touchAction: "none",
         transition:
-          isDragging || isSettling
+          isDragging || isPinching
             ? "none"
             : "transform 0.4s cubic-bezier(0.22, 1, 0.36, 1)",
+        willChange: isDragging || isPinching ? "transform" : "auto",
       }}
       onMouseDown={handleMouseDown}
       onTouchStart={handleTouchStart}
@@ -406,14 +341,13 @@ function DraggableImage({
         <img
           src={image.asset.url}
           alt={`Stack image ${index + 1}`}
-          className="pointer-events-none block transition-transform duration-300 ease-out"
+          className="pointer-events-none block"
           draggable={false}
           style={{
             maxWidth: "200px",
             maxHeight: "300px",
             width: "auto",
             height: "auto",
-            transform: `scale(${scale})`,
           }}
         />
       ) : image?.asset?.playbackId ? (
@@ -421,24 +355,18 @@ function DraggableImage({
           playbackId={image.asset.playbackId}
           timestamp={image.timestamp || "0:00"}
           isHovered={true}
-          className="pointer-events-none block transition-transform duration-300 ease-out"
+          className="pointer-events-none block"
           style={{
             maxWidth: "200px",
             maxHeight: "300px",
             width: "auto",
             height: "auto",
-            transform: `scale(${scale})`,
           }}
           maxResolution="270p"
           loopDuration={60}
         />
       ) : (
-        <div
-          className="w-48 h-64 bg-gray-100 flex items-center justify-center text-gray-500 transition-transform duration-300 ease-out"
-          style={{
-            transform: `scale(${scale})`,
-          }}
-        >
+        <div className="w-48 h-64 bg-gray-100 flex items-center justify-center text-gray-500">
           Item {index + 1}
         </div>
       )}
@@ -453,26 +381,84 @@ export default function DraggableStack({
   imagePalette,
 }) {
   const { setBackgroundColor } = useTheme();
-  const safeStackImages = stackImages || [];
-  const [maxZIndex, setMaxZIndex] = useState(safeStackImages.length);
-  const cardRefs = useRef([]);
   const sectionRef = useRef(null);
-  const [scrollProgress, setScrollProgress] = useState(0);
+  const [maxZIndex, setMaxZIndex] = useState(stackImages.length);
 
-  // Array to store base positions for all images
-  const [basePositions, setBasePositions] = useState(() =>
-    safeStackImages.map((_, index) => ({
-      x: index * 5 + seededRandom(index * 123) * 30 - 15,
-      y: index * 5 + seededRandom(index * 456) * 30 - 15,
-      rotation: index * 2 - 4 + seededRandom(index * 789) * 10 - 5,
+  // Initialize transforms for all images
+  const [transforms, setTransforms] = useState(() =>
+    stackImages.map((_, index) => ({
+      x: index * 5 + seededRandom(index * 123) * 20 - 10,
+      y: index * 5 + seededRandom(index * 456) * 20 - 10,
+      rotation: index * 2 - 4 + seededRandom(index * 789) * 8 - 4,
+      scale: 1,
+      zIndex: stackImages.length - index,
     }))
   );
 
-  // Combine colors from multiple palettes or use single palette for backward compatibility
+  // Update transform for a specific image
+  const updateTransform = useCallback((index, updates) => {
+    setTransforms((prev) => {
+      const newTransforms = [...prev];
+      newTransforms[index] = {
+        ...newTransforms[index],
+        ...updates,
+      };
+      return newTransforms;
+    });
+  }, []);
+
+  // Bring image to front
+  const handleBringToFront = useCallback(
+    (index) => {
+      setMaxZIndex((prev) => {
+        const newZ = prev + 1;
+        updateTransform(index, { zIndex: newZ });
+        return newZ;
+      });
+    },
+    [updateTransform]
+  );
+
+  // Expand images into grid
+  const handleExpand = useCallback(() => {
+    const cols = Math.ceil(Math.sqrt(stackImages.length));
+    const cellSize = 220;
+    const startX = -(cols * cellSize) / 2 + cellSize / 2;
+    const startY =
+      -(Math.ceil(stackImages.length / cols) * cellSize) / 2 + cellSize / 2;
+
+    const newTransforms = stackImages.map((_, index) => {
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      return {
+        ...transforms[index],
+        x: startX + col * cellSize,
+        y: startY + row * cellSize,
+        rotation: 0,
+        scale: 1,
+      };
+    });
+
+    setTransforms(newTransforms);
+  }, [stackImages, transforms]);
+
+  // Collect images to center
+  const handleCollect = useCallback(() => {
+    const newTransforms = stackImages.map((_, index) => ({
+      ...transforms[index],
+      x: seededRandom(index * 321) * 10 - 5,
+      y: seededRandom(index * 654) * 10 - 5,
+      rotation: seededRandom(index * 987) * 15 - 7.5,
+      scale: 1,
+    }));
+
+    setTransforms(newTransforms);
+  }, [stackImages, transforms]);
+
+  // Handle color palettes
   const paletteColors = (() => {
     const allColors = [];
 
-    // If imagePalettes array is provided, use it
     if (imagePalettes && imagePalettes.length > 0) {
       imagePalettes.forEach((palette, paletteIndex) => {
         if (palette) {
@@ -489,18 +475,14 @@ export default function DraggableStack({
           colorTypes.forEach(({ name, key }) => {
             if (palette[key]?.background) {
               allColors.push({
-                name: `Image ${
-                  paletteIndex === 0 ? 1 : paletteIndex === 1 ? 5 : 9
-                } - ${name}`,
+                name: `Image ${paletteIndex + 1} - ${name}`,
                 color: palette[key].background,
               });
             }
           });
         }
       });
-    }
-    // Fall back to single imagePalette for backward compatibility
-    else if (imagePalette) {
+    } else if (imagePalette) {
       const colorTypes = [
         { name: "Dominant", key: "dominant" },
         { name: "Vibrant", key: "vibrant" },
@@ -513,74 +495,44 @@ export default function DraggableStack({
 
       colorTypes.forEach(({ name, key }) => {
         if (imagePalette[key]?.background) {
-          allColors.push({
-            name: name,
-            color: imagePalette[key].background,
-          });
+          allColors.push({ name, color: imagePalette[key].background });
         }
       });
     }
 
-    // Remove duplicates based on color value
     return allColors.filter(
       (item, index, self) =>
         index === self.findIndex((c) => c.color === item.color)
     );
   })();
 
-  // Set initial selected color from first available color
   const [selectedColor, setSelectedColor] = useState(
     paletteColors[0]?.color || null
   );
-
-  // State for mobile dropdown
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [colorActive, setColorActive] = useState(false);
 
-  // Handle scroll for fade-in effect and image spreading
+  // Handle scroll for color change
   useEffect(() => {
     const handleScroll = () => {
       if (!sectionRef.current) return;
 
-      const section = sectionRef.current;
-      const rect = section.getBoundingClientRect();
+      const rect = sectionRef.current.getBoundingClientRect();
       const windowHeight = window.innerHeight;
-
-      // Calculate visibility percentage
       const visibleHeight =
         Math.min(windowHeight, rect.bottom) - Math.max(0, rect.top);
-      const sectionHeight = rect.height;
       const visibilityPercentage = Math.max(
         0,
-        Math.min(1, visibleHeight / sectionHeight)
+        Math.min(1, visibleHeight / rect.height)
       );
 
-      // Only change color when 60% of the stack is visible AND user has scrolled into the section
-      const colorChangeThreshold = 0.6;
-      const isScrolledIntoSection = rect.top < windowHeight;
-      const shouldChangeColor =
-        visibilityPercentage >= colorChangeThreshold && isScrolledIntoSection;
+      const shouldActivateColor =
+        visibilityPercentage >= 0.6 && rect.top < windowHeight;
 
-      // For spreading effect, use the original progress calculation
-      const scrollStart = windowHeight;
-      const scrollEnd = windowHeight * 0.2;
-      const spreadProgress = Math.max(
-        0,
-        Math.min(1, (scrollStart - rect.top) / (scrollStart - scrollEnd))
-      );
-
-      setScrollProgress(spreadProgress);
-
-      // Store color change state separately
-      if (!sectionRef.current.colorChangeState) {
-        sectionRef.current.colorChangeState = false;
-      }
-
-      if (shouldChangeColor !== sectionRef.current.colorChangeState) {
-        sectionRef.current.colorChangeState = shouldChangeColor;
-        // Trigger color change using the stored selected color
-        const currentColor = sectionRef.current.selectedColor;
-        if (shouldChangeColor && currentColor) {
-          setBackgroundColor(currentColor);
+      if (shouldActivateColor !== colorActive) {
+        setColorActive(shouldActivateColor);
+        if (shouldActivateColor && selectedColor) {
+          setBackgroundColor(selectedColor);
         } else {
           setBackgroundColor(null);
         }
@@ -588,176 +540,54 @@ export default function DraggableStack({
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll(); // Initial calculation
+    handleScroll();
 
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [selectedColor, setBackgroundColor]);
+  }, [selectedColor, colorActive, setBackgroundColor]);
 
-  // Store selected color for manual color changes
-  useEffect(() => {
-    if (!selectedColor || !sectionRef.current) return;
+  const handleColorChange = useCallback(
+    (color) => {
+      setSelectedColor(color);
+      if (colorActive) {
+        setBackgroundColor(color);
+      }
+    },
+    [colorActive, setBackgroundColor]
+  );
 
-    // Store the selected color on the ref for the scroll handler to use
-    sectionRef.current.selectedColor = selectedColor;
-  }, [selectedColor]);
-
-  // Cleanup on unmount
+  // Cleanup
   useEffect(() => {
     return () => {
+      setBackgroundColor(null);
       document.body.style.backgroundColor = "";
       document.body.style.color = "";
     };
-  }, []);
+  }, [setBackgroundColor]);
 
-  const handleColorChange = (color) => {
-    setSelectedColor(color);
-    // Only apply background color if 60% of stack is visible and user has scrolled into section
-    if (sectionRef.current) {
-      const rect = sectionRef.current.getBoundingClientRect();
-      const windowHeight = window.innerHeight;
-      const visibleHeight =
-        Math.min(windowHeight, rect.bottom) - Math.max(0, rect.top);
-      const sectionHeight = rect.height;
-      const visibilityPercentage = Math.max(
-        0,
-        Math.min(1, visibleHeight / sectionHeight)
-      );
-      const isScrolledIntoSection = rect.top < windowHeight;
-      const colorChangeThreshold = 0.6;
-
-      if (
-        visibilityPercentage >= colorChangeThreshold &&
-        isScrolledIntoSection
-      ) {
-        setBackgroundColor(color);
-      }
-    }
-  };
-
-  const handleBringToFront = (imageIndex) => {
-    setMaxZIndex((prev) => prev + 1);
-    if (cardRefs.current[imageIndex]?.current) {
-      cardRefs.current[imageIndex].current.style.zIndex = maxZIndex + 1;
-    }
-  };
-
-  const updatePositions = (newPositions) => {
-    setBasePositions(newPositions);
-  };
-
-  const handleExpand = () => {
-    const newPositions = safeStackImages.map((_, index) => {
-      const gridPosition = getExpandedPosition(index);
-      return {
-        x: gridPosition.x,
-        y: gridPosition.y,
-        rotation: 0,
-      };
-    });
-
-    // Update the base positions array
-    setBasePositions(newPositions);
-
-    // Apply visual transform
-    safeStackImages.forEach((_, index) => {
-      const gridPosition = getExpandedPosition(index);
-
-      if (cardRefs.current[index]?.current) {
-        const imageComponent = cardRefs.current[index].current;
-
-        // Apply transform immediately
-        imageComponent.style.transition =
-          "transform 700ms cubic-bezier(0.34, 1.56, 0.64, 1)";
-        imageComponent.style.transform = `translate(${gridPosition.x}px, ${gridPosition.y}px) rotate(0deg)`;
-
-        setTimeout(() => {
-          if (imageComponent) {
-            imageComponent.style.transition = "";
-          }
-        }, 700);
-      }
-    });
-  };
-
-  const handleCollect = () => {
-    const newPositions = safeStackImages.map((_, index) => {
-      const centerPosition = getCollectedPosition(index);
-      const randomRotation = index * 2 - 4 + seededRandom(index * 789) * 10 - 5;
-      return {
-        x: centerPosition.x,
-        y: centerPosition.y,
-        rotation: randomRotation,
-      };
-    });
-
-    // Update the base positions array
-    setBasePositions(newPositions);
-
-    // Apply visual transform
-    safeStackImages.forEach((_, index) => {
-      const centerPosition = getCollectedPosition(index);
-      const randomRotation = index * 2 - 4 + seededRandom(index * 789) * 10 - 5;
-
-      if (cardRefs.current[index]?.current) {
-        const imageComponent = cardRefs.current[index].current;
-
-        // Apply transform immediately
-        imageComponent.style.transition =
-          "transform 700ms cubic-bezier(0.34, 1.56, 0.64, 1)";
-        imageComponent.style.transform = `translate(${centerPosition.x}px, ${centerPosition.y}px) rotate(${randomRotation}deg)`;
-
-        setTimeout(() => {
-          if (imageComponent) {
-            imageComponent.style.transition = "";
-          }
-        }, 700);
-      }
-    });
-  };
-
-  const getExpandedPosition = (index) => {
-    const cols = Math.ceil(Math.sqrt(safeStackImages.length));
-    const row = Math.floor(index / cols);
-    const col = index % cols;
-    return {
-      x: col * 200 - cols * 100 + 100,
-      y: row * 200 - Math.ceil(safeStackImages.length / cols) * 100 + 100,
-    };
-  };
-
-  const getCollectedPosition = (index) => {
-    return {
-      x: index * 3 + seededRandom(index * 321) * 12 - 6,
-      y: index * 3 + seededRandom(index * 654) * 12 - 6,
-    };
-  };
-
-  if (!safeStackImages || safeStackImages.length === 0) {
+  if (!stackImages || stackImages.length === 0) {
     return null;
   }
 
   return (
     <>
       <div
-        className="w-full sticky top-0 pt-4 z-9999 mt-20 transition-colors duration-300 ease-in-out"
+        className="w-full sticky top-0 pt-4 z-[9999] mt-20 transition-colors duration-300"
         style={{
           backgroundColor:
-            sectionRef.current?.colorChangeState && selectedColor
-              ? selectedColor
-              : "#202020",
+            colorActive && selectedColor ? selectedColor : "#202020",
         }}
       >
         <div className="grid grid-cols-12 mx-4 border-b pb-4">
-          <h4 className="uppercase text-sm col-span-3 md:col-span-3">stack</h4>
+          <h4 className="uppercase text-sm col-span-3">stack</h4>
           <div className="col-span-4 md:col-span-3 space-x-4 flex justify-start">
             <button
-              className="text-sm opacity-90 hover:opacity-100 transition-opacity inline"
+              className="text-sm opacity-90 hover:opacity-100 transition-opacity"
               onClick={handleExpand}
             >
               Expand
             </button>
             <button
-              className="text-sm opacity-90 hover:opacity-100 transition-opacity inline"
+              className="text-sm opacity-90 hover:opacity-100 transition-opacity"
               onClick={handleCollect}
             >
               Collect
@@ -765,7 +595,7 @@ export default function DraggableStack({
           </div>
           {paletteColors.length > 0 && (
             <div className="col-span-5 flex justify-end md:justify-start md:col-span-3">
-              {/* Desktop: Inline color buttons */}
+              {/* Desktop: Color buttons */}
               <div className="hidden md:flex gap-1.5">
                 {paletteColors.map((item, index) => (
                   <button
@@ -790,7 +620,7 @@ export default function DraggableStack({
                   className="flex items-center gap-2 text-sm opacity-90 hover:opacity-100 transition-opacity"
                 >
                   <div
-                    className="h-4 w-4   ring"
+                    className="h-4 w-4 ring-1 ring-current"
                     style={{ backgroundColor: selectedColor || "#ccc" }}
                   />
                   Colors
@@ -812,8 +642,8 @@ export default function DraggableStack({
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-4 p-2 z-50">
-                    <div className="flex flex-col gap-1 w-[80px]">
+                  <div className="absolute top-full left-0 mt-2 bg-white shadow-lg rounded-lg p-2 z-50">
+                    <div className="flex flex-col gap-1">
                       {paletteColors.map((item, index) => (
                         <button
                           key={index}
@@ -821,9 +651,9 @@ export default function DraggableStack({
                             handleColorChange(item.color);
                             setIsDropdownOpen(false);
                           }}
-                          className={`h-6 w-full transition-transform cursor-pointer   ${
+                          className={`h-8 w-24 rounded transition-all ${
                             selectedColor === item.color
-                              ? "ring-1 ring-black"
+                              ? "ring-2 ring-offset-2 ring-black"
                               : ""
                           }`}
                           style={{ backgroundColor: item.color }}
@@ -839,20 +669,22 @@ export default function DraggableStack({
           )}
         </div>
       </div>
+
       <section ref={sectionRef} className="min-h-screen px-4 overflow-hidden">
-        <div className="relative w-full min-h-[120svh] flex flex-col items-center justify-center">
-          <div className="relative w-full h-full flex items-center justify-center ">
-            {safeStackImages.map((image, index) => (
+        <div className="relative w-full min-h-[120vh] flex items-center justify-center">
+          <div className="relative">
+            {stackImages.map((image, index) => (
               <DraggableImage
-                key={`${image._key || index}`}
+                key={image._key || `img-${index}`}
                 image={image}
                 index={index}
-                totalImages={safeStackImages.length}
+                totalImages={stackImages.length}
+                position={{ x: transforms[index].x, y: transforms[index].y }}
+                rotation={transforms[index].rotation}
+                scale={transforms[index].scale}
+                zIndex={transforms[index].zIndex}
+                onUpdateTransform={updateTransform}
                 onBringToFront={handleBringToFront}
-                cardRefs={cardRefs}
-                scrollProgress={scrollProgress}
-                basePositions={basePositions}
-                onPositionUpdate={updatePositions}
               />
             ))}
           </div>

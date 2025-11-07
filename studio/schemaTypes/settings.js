@@ -96,11 +96,53 @@ export default {
     {
       name: "image",
       title: "Image",
-      type: "image",
-      description: "image on the right side",
-      options: {
-        hotspot: true,
-      },
+      type: "array",
+      description: "Hero content",
+      of: [
+        {
+          type: "image",
+          title: "Image",
+          options: {
+            hotspot: true,
+          },
+        },
+        {
+          type: "object",
+          name: "video",
+          title: "Video",
+          fields: [
+            {
+              name: "videoType",
+              title: "Video Type",
+              type: "string",
+              options: {
+                list: [
+                  { title: "360", value: "360" },
+                  { title: "Video", value: "video" },
+                ],
+                layout: "radio",
+              },
+            },
+            {
+              name: "video",
+              title: "Video File",
+              type: "mux.video",
+            },
+          ],
+        },
+        {
+          type: "object",
+          title: "Text",
+          fields: [
+            {
+              name: "content",
+              title: "Content",
+              type: "array",
+              of: [{ type: "block" }],
+            },
+          ],
+        },
+      ],
       group: "content",
     },
     {

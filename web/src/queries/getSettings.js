@@ -23,13 +23,37 @@ export async function getSettings() {
         project
       }
     },
-    image {
-      asset->{
-        _id,
-        url
+    image[] {
+      _type == "image" => {
+        _type,
+        asset->{
+          _id,
+          url
+        },
+        hotspot,
+        crop
       },
-      hotspot,
-      crop
+      _type == "mux.video" => {
+        _type,
+        asset->{
+          _id,
+          playbackId
+        }
+      },
+      _type == "video" => {
+        _type,
+        videoType,
+        video {
+          asset->{
+            _id,
+            playbackId
+          }
+        }
+      },
+      _type == "object" => {
+        _type,
+        content
+      }
     },
     seoTitle,
     seoDescription,

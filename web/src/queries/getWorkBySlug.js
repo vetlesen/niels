@@ -51,7 +51,7 @@ export async function getWorkBySlug(slug) {
         }
       }
     },
-    stack[0...10] {
+    stack[0...20] {
       _key,
       _type,
       asset-> {

@@ -291,6 +291,12 @@ export default function Video360Player({ videoUrl, isHLS = false }) {
           {isMuted ? "Unmute" : "Mute"}
         </button>
       </div>
+      <div className="absolute bottom-2 left-2 flex gap-2 z-[1000]">
+        <p className="font-normal text-xs px-2 py-1 bg-black/80 text-white hover:bg-black/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          {" "}
+          360 video, drag to rotate
+        </p>
+      </div>
     </div>
   );
 }
