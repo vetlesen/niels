@@ -76,7 +76,8 @@ export default function VideoThumbnail({
       muted
       loop
       playsInline
-      preload="none"
+      autoPlay // ADD THIS
+      preload="auto" // CHANGE FROM "none" to "auto"
       startTime={startTimeSeconds}
       endTime={endTimeSeconds}
       className={`thumbnail ${className}`}
