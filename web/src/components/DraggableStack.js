@@ -68,8 +68,12 @@ function DraggableImage({
       setPosition({ x: basePos.x, y: basePos.y });
       setRotation(basePos.rotation);
       lastPositionRef.current = { x: basePos.x, y: basePos.y };
+
+      // Update performance refs to match new base positions
+      lastScaleRef.current = scale;
+      lastRotationRef.current = basePos.rotation;
     }
-  }, [basePositions, index]);
+  }, [basePositions, index, scale]);
 
   // Enhanced physics simulation for momentum
   const applyMomentum = () => {
@@ -708,30 +712,8 @@ export default function DraggableStack({
       };
     });
 
-    // Apply visual transform
-    safeStackImages.forEach((_, index) => {
-      const gridPosition = getExpandedPosition(index);
-
-      if (cardRefs.current[index]?.current) {
-        const imageComponent = cardRefs.current[index].current;
-
-        // Apply transform immediately
-        imageComponent.style.transition =
-          "transform 700ms cubic-bezier(0.34, 1.56, 0.64, 1)";
-        imageComponent.style.transform = `translate(${gridPosition.x}px, ${gridPosition.y}px) rotate(0deg)`;
-
-        setTimeout(() => {
-          if (imageComponent) {
-            imageComponent.style.transition = "";
-          }
-        }, 700);
-      }
-    });
-
-    // Update the base positions array after animation completes
-    setTimeout(() => {
-      setBasePositions(newPositions);
-    }, 700);
+    // Update the base positions array immediately to affect scroll spreading
+    setBasePositions(newPositions);
   };
 
   const handleCollect = () => {
@@ -745,29 +727,8 @@ export default function DraggableStack({
       };
     });
 
-    // Update the base positions array
+    // Update the base positions array immediately to affect scroll spreading
     setBasePositions(newPositions);
-
-    // Apply visual transform
-    safeStackImages.forEach((_, index) => {
-      const centerPosition = getCollectedPosition(index);
-      const randomRotation = index * 2 - 4 + seededRandom(index * 789) * 10 - 5;
-
-      if (cardRefs.current[index]?.current) {
-        const imageComponent = cardRefs.current[index].current;
-
-        // Apply transform immediately
-        imageComponent.style.transition =
-          "transform 700ms cubic-bezier(0.34, 1.56, 0.64, 1)";
-        imageComponent.style.transform = `translate(${centerPosition.x}px, ${centerPosition.y}px) rotate(${randomRotation}deg)`;
-
-        setTimeout(() => {
-          if (imageComponent) {
-            imageComponent.style.transition = "";
-          }
-        }, 700);
-      }
-    });
   };
 
   const getExpandedPosition = (index) => {
