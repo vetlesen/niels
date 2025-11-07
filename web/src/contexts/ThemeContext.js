@@ -40,13 +40,31 @@ export function ThemeProvider({ children }) {
     const isAboutPage = pathname === "/about";
     const isHomepage = pathname === "/";
 
+    console.log("🔄 ThemeContext pathname effect:", {
+      pathname,
+      isWorkPage,
+      isAboutPage,
+      isHomepage,
+      currentCustomColor: customColor,
+    });
+
     // Reset custom color when navigating to pages that should have specific themes
     if (isAboutPage || isHomepage || !isWorkPage) {
+      console.log("⚠️ ThemeContext RESETTING customColor due to pathname");
       setCustomColor(null);
     }
   }, [pathname]);
 
   useEffect(() => {
+    console.log("🖌️ ThemeContext applying theme:", {
+      pathname,
+      customColor,
+      activeFilter,
+      isWorkPage: pathname.startsWith("/work/"),
+      isAboutPage: pathname === "/about",
+      willApplyCustomColor: !!customColor,
+    });
+
     // Apply theme classes to body using Tailwind
     document.body.className = "";
 
@@ -54,6 +72,7 @@ export function ThemeProvider({ children }) {
     const isAboutPage = pathname === "/about";
 
     if (customColor) {
+      console.log("✅ Applying customColor to body:", customColor);
       // Use custom color from image palette
       document.body.style.backgroundColor = customColor;
       document.body.className = "transition-colors duration-300 ease-in-out";
@@ -61,24 +80,29 @@ export function ThemeProvider({ children }) {
       // Determine text color based on background brightness
       const textColor = isColorDark(customColor) ? "white" : "black";
       document.body.style.color = textColor;
+      console.log("✅ Text color set to:", textColor);
     } else if (isAboutPage) {
+      console.log("📄 Applying about page white background");
       // About page always has white background
       document.body.style.backgroundColor = "";
       document.body.style.color = "";
       document.body.className =
         "bg-white transition-colors duration-300 ease-in-out";
     } else if (isWorkPage) {
+      console.log("🎬 Applying work page #202020 background");
       // Work pages always have #202020 background
       document.body.style.backgroundColor = "";
       document.body.style.color = "";
       document.body.className =
         "bg-[#202020] text-white transition-colors duration-300 ease-in-out";
     } else if (activeFilter === "narrative") {
+      console.log("🎭 Applying narrative filter background");
       document.body.style.backgroundColor = "";
       document.body.style.color = "";
       document.body.className =
         "bg-[#202020] text-white transition-colors duration-300 ease-in-out";
     } else if (activeFilter === "commercial") {
+      console.log("🏢 Applying commercial filter background");
       document.body.style.backgroundColor = "";
       document.body.style.color = "";
       document.body.className =
@@ -100,6 +124,7 @@ export function ThemeProvider({ children }) {
   };
 
   const setFilter = (category) => {
+    console.log("🎨 ThemeContext setFilter called:", category);
     setActiveFilter(category);
     setCustomColor(null); // Reset custom color when changing filter
 
@@ -113,7 +138,9 @@ export function ThemeProvider({ children }) {
   };
 
   const setBackgroundColor = (color) => {
+    console.log("🎨 ThemeContext setBackgroundColor called with:", color);
     setCustomColor(color);
+    console.log("🎨 ThemeContext customColor state updated to:", color);
   };
 
   // Determine if current background is dark

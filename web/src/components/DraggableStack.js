@@ -383,12 +383,31 @@ export default function DraggableStack({
   const { setBackgroundColor } = useTheme();
   const sectionRef = useRef(null);
   const [maxZIndex, setMaxZIndex] = useState(stackImages.length);
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [hasInteracted, setHasInteracted] = useState(false);
 
-  // Initialize transforms for all images
+  // Generate target positions for spread (calculated once)
+  const spreadTargets = useRef(
+    stackImages.map((_, index) => {
+      // Create an organic spread pattern using multiple random factors
+      const randomAngle = seededRandom(index * 1337) * Math.PI * 2;
+      const randomRadius = seededRandom(index * 2674) * 200 + 50;
+      const randomOffsetX = seededRandom(index * 4011) * 80 - 40;
+      const randomOffsetY = seededRandom(index * 5348) * 80 - 40;
+
+      return {
+        x: Math.cos(randomAngle) * randomRadius + randomOffsetX,
+        y: Math.sin(randomAngle) * randomRadius + randomOffsetY,
+        rotation: seededRandom(index * 789) * 20 - 10,
+      };
+    })
+  );
+
+  // Initialize transforms for all images - start stacked at center
   const [transforms, setTransforms] = useState(() =>
     stackImages.map((_, index) => ({
-      x: index * 5 + seededRandom(index * 123) * 20 - 10,
-      y: index * 5 + seededRandom(index * 456) * 20 - 10,
+      x: 0, // Start at center
+      y: 0, // Start at center
       rotation: index * 2 - 4 + seededRandom(index * 789) * 8 - 4,
       scale: 1,
       zIndex: stackImages.length - index,
@@ -405,6 +424,7 @@ export default function DraggableStack({
       };
       return newTransforms;
     });
+    setHasInteracted(true); // Mark as user-interacted
   }, []);
 
   // Bring image to front
@@ -440,6 +460,7 @@ export default function DraggableStack({
     });
 
     setTransforms(newTransforms);
+    setHasInteracted(true);
   }, [stackImages, transforms]);
 
   // Collect images to center
@@ -453,6 +474,7 @@ export default function DraggableStack({
     }));
 
     setTransforms(newTransforms);
+    setHasInteracted(true);
   }, [stackImages, transforms]);
 
   // Handle color palettes
@@ -461,7 +483,14 @@ export default function DraggableStack({
 
     if (imagePalettes && imagePalettes.length > 0) {
       imagePalettes.forEach((palette, paletteIndex) => {
-        if (palette) {
+        // Check if this is a plain hex string (colorOverwrite)
+        if (typeof palette === "string" && palette.startsWith("#")) {
+          allColors.push({
+            name: "Custom Color",
+            color: palette,
+          });
+        } else if (palette) {
+          // Process palette object
           const colorTypes = [
             { name: "Dominant", key: "dominant" },
             { name: "Vibrant", key: "vibrant" },
@@ -510,9 +539,8 @@ export default function DraggableStack({
     paletteColors[0]?.color || null
   );
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [colorActive, setColorActive] = useState(false);
 
-  // Handle scroll for color change
+  // Handle scroll for animation and color change
   useEffect(() => {
     const handleScroll = () => {
       if (!sectionRef.current) return;
@@ -526,13 +554,62 @@ export default function DraggableStack({
         Math.min(1, visibleHeight / rect.height)
       );
 
+      // Calculate scroll progress for spread animation
+      const spreadStart = 0.3;
+      const spreadEnd = 0.8;
+      const delayThreshold = 0.25;
+
+      if (visibilityPercentage >= delayThreshold) {
+        const adjustedProgress = Math.max(
+          0,
+          Math.min(
+            1,
+            (visibilityPercentage - spreadStart) / (spreadEnd - spreadStart)
+          )
+        );
+
+        const easedProgress = 1 - Math.pow(1 - adjustedProgress, 3);
+        setScrollProgress(easedProgress);
+      } else {
+        setScrollProgress(0);
+      }
+
+      // Color change at 60% visibility - using ref to avoid closure issues
       const shouldActivateColor =
         visibilityPercentage >= 0.6 && rect.top < windowHeight;
 
-      if (shouldActivateColor !== colorActive) {
-        setColorActive(shouldActivateColor);
-        if (shouldActivateColor && selectedColor) {
-          setBackgroundColor(selectedColor);
+      // Initialize colorChangeState on ref if not present
+      if (!sectionRef.current.colorChangeState) {
+        sectionRef.current.colorChangeState = false;
+      }
+
+      // 🔍 DEBUG LOGS
+      console.log("🎨 DraggableStack Scroll Debug:", {
+        visibilityPercentage: visibilityPercentage.toFixed(2),
+        shouldActivateColor,
+        currentColorChangeState: sectionRef.current.colorChangeState,
+        storedColorOnRef: sectionRef.current.selectedColor,
+        selectedColorState: selectedColor,
+        willTriggerChange:
+          shouldActivateColor !== sectionRef.current.colorChangeState,
+      });
+
+      // Only trigger if state actually changed
+      if (shouldActivateColor !== sectionRef.current.colorChangeState) {
+        sectionRef.current.colorChangeState = shouldActivateColor;
+        // Use the stored selectedColor from ref
+        const currentColor = sectionRef.current.selectedColor;
+
+        // 🔍 DEBUG LOG WHEN CHANGING
+        console.log("🚀 DraggableStack calling setBackgroundColor:", {
+          shouldActivateColor,
+          currentColor,
+          callingWith:
+            shouldActivateColor && currentColor ? currentColor : null,
+        });
+
+        if (shouldActivateColor && currentColor) {
+          setBackgroundColor(currentColor);
         } else {
           setBackgroundColor(null);
         }
@@ -543,26 +620,81 @@ export default function DraggableStack({
     handleScroll();
 
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [selectedColor, colorActive, setBackgroundColor]);
+  }, [setBackgroundColor, selectedColor]);
+
+  // Store selected color on ref for scroll handler to use
+  useEffect(() => {
+    if (!selectedColor || !sectionRef.current) return;
+    sectionRef.current.selectedColor = selectedColor;
+    console.log("💾 Stored color on ref:", selectedColor);
+  }, [selectedColor]);
+
+  // Apply scroll-based spreading to transforms (only if user hasn't interacted)
+  useEffect(() => {
+    if (hasInteracted) return; // Don't override user interactions
+
+    const newTransforms = stackImages.map((_, index) => {
+      const target = spreadTargets.current[index];
+
+      // Stagger the animation for each card
+      const staggerDelay = index * 0.05;
+      const staggeredProgress = Math.max(
+        0,
+        Math.min(1, scrollProgress - staggerDelay)
+      );
+
+      return {
+        x: target.x * staggeredProgress,
+        y: target.y * staggeredProgress,
+        rotation: target.rotation * staggeredProgress,
+        scale: 1,
+        zIndex: stackImages.length - index,
+      };
+    });
+
+    setTransforms(newTransforms);
+  }, [scrollProgress, stackImages, hasInteracted]);
 
   const handleColorChange = useCallback(
     (color) => {
+      console.log("🎨 User clicked color button:", color);
       setSelectedColor(color);
-      if (colorActive) {
-        setBackgroundColor(color);
+      // Manually apply color if section is in view
+      if (sectionRef.current) {
+        const rect = sectionRef.current.getBoundingClientRect();
+        const windowHeight = window.innerHeight;
+        const visibleHeight =
+          Math.min(windowHeight, rect.bottom) - Math.max(0, rect.top);
+        const visibilityPercentage = Math.max(
+          0,
+          Math.min(1, visibleHeight / rect.height)
+        );
+        const isScrolledIntoSection = rect.top < windowHeight;
+
+        console.log("🎨 Manual color change check:", {
+          visibilityPercentage: visibilityPercentage.toFixed(2),
+          isScrolledIntoSection,
+          willApply: visibilityPercentage >= 0.6 && isScrolledIntoSection,
+        });
+
+        if (visibilityPercentage >= 0.6 && isScrolledIntoSection) {
+          console.log("🚀 Manual setBackgroundColor:", color);
+          setBackgroundColor(color);
+        }
       }
     },
-    [colorActive, setBackgroundColor]
+    [setBackgroundColor]
   );
 
   // Cleanup
   useEffect(() => {
     return () => {
+      console.log("🧹 DraggableStack cleanup - resetting background");
       setBackgroundColor(null);
       document.body.style.backgroundColor = "";
       document.body.style.color = "";
     };
-  }, [setBackgroundColor]);
+  }, []);
 
   if (!stackImages || stackImages.length === 0) {
     return null;
@@ -574,7 +706,9 @@ export default function DraggableStack({
         className="w-full sticky top-0 pt-4 z-[9999] mt-20 transition-colors duration-300"
         style={{
           backgroundColor:
-            colorActive && selectedColor ? selectedColor : "#202020",
+            sectionRef.current?.colorChangeState && selectedColor
+              ? selectedColor
+              : "#202020",
         }}
       >
         <div className="grid grid-cols-12 mx-4 border-b pb-4">
@@ -594,9 +728,9 @@ export default function DraggableStack({
             </button>
           </div>
           {paletteColors.length > 0 && (
-            <div className="col-span-5 flex justify-end md:justify-start md:col-span-3">
+            <div className="col-span-2 flex justify-end md:justify-start md:col-span-3">
               {/* Desktop: Color buttons */}
-              <div className="hidden md:flex gap-1.5">
+              <div className="hidden xl:flex gap-1.5">
                 {paletteColors.map((item, index) => (
                   <button
                     key={index}
@@ -614,7 +748,7 @@ export default function DraggableStack({
               </div>
 
               {/* Mobile: Dropdown */}
-              <div className="md:hidden relative">
+              <div className="xl:hidden relative">
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   className="flex items-center gap-2 text-sm opacity-90 hover:opacity-100 transition-opacity"
@@ -642,7 +776,7 @@ export default function DraggableStack({
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 bg-white shadow-lg rounded-lg p-2 z-50">
+                  <div className="absolute top-full right-0 mt-2 bg-white shadow-lg rounded-lg p-2 z-50">
                     <div className="flex flex-col gap-1">
                       {paletteColors.map((item, index) => (
                         <button
@@ -667,12 +801,13 @@ export default function DraggableStack({
               </div>
             </div>
           )}
+          <button className="col-start-11 text-sm">Random</button>
         </div>
       </div>
 
       <section ref={sectionRef} className="min-h-screen px-4 overflow-hidden">
         <div className="relative w-full min-h-[120vh] flex items-center justify-center">
-          <div className="relative">
+          <div className="relative w-0 h-0 flex items-center justify-center">
             {stackImages.map((image, index) => (
               <DraggableImage
                 key={image._key || `img-${index}`}

@@ -68,7 +68,6 @@ export default async function WorkDetail({ params, searchParams }) {
     >
       <main className="">
         <div className="pt-4">
-          {" "}
           <div
             className="mb-2 px-4 max-h-[90svh]"
             style={{
@@ -89,11 +88,13 @@ export default async function WorkDetail({ params, searchParams }) {
             )}
           </div>
           {/* Work Details */}
-          <div className="mb-12 px-4">
-            <h1 className="">{work.name}</h1>
-            <h2 className="font-normal">{work.title}</h2>
-            <p className="font-normal">{work.type}</p>
-            <p className="font-normal">{work.year}</p>
+          <div className="mb-12 px-4 w-full flex">
+            <div className="w-full flex flex-col">
+              <h1 className="">{work.name}</h1>
+              <h2 className="font-normal">{work.title}</h2>
+              <p className="font-normal">{work.type}</p>
+              <p className="font-normal">{work.year}</p>
+            </div>
           </div>
           <div className="w-full grid grid-cols-1 md:grid-cols-2 px-4 gap-12 md:gap-0">
             {/* Credits */}
@@ -178,6 +179,7 @@ export default async function WorkDetail({ params, searchParams }) {
         <DraggableStack
           stackImages={work.stack}
           imagePalettes={[
+            work.colorOverwrite,
             work.imagePalette0,
             work.imagePalette1,
             work.imagePalette2,

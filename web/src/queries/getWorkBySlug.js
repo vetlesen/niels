@@ -22,6 +22,28 @@ export async function getWorkBySlug(slug) {
         },
       },
     },
+    thumbnails[] {
+      timestamp,
+      type,
+      image {
+        asset-> {
+          _id,
+          url
+        }
+      },
+      video {
+        asset-> {
+          _id,
+          playbackId,
+          assetId,
+          status,
+          data {
+            duration,
+            aspect_ratio
+          }
+        }
+      }
+    },
     credits[] {
       role,
       names
@@ -79,7 +101,8 @@ export async function getWorkBySlug(slug) {
     },
     "imagePalette0": stack[0].asset->metadata.palette,
     "imagePalette1": stack[4].asset->metadata.palette,
-    "imagePalette2": stack[8].asset->metadata.palette
+    "imagePalette2": stack[8].asset->metadata.palette,
+    colorOverwrite
   }`;
 
   try {
