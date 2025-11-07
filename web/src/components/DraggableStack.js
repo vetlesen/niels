@@ -550,9 +550,9 @@ export default function DraggableStack({
 
       // Calculate scroll progress for spread animation
       // Start at 20% visibility, reach full spread at 50% visibility
-      const spreadStart = 0.4;
+      const spreadStart = 0.3;
       const spreadEnd = 0.8;
-      const delayThreshold = 0.2; // Wait until 25% visible before starting
+      const delayThreshold = 0.25; // Wait until 25% visible before starting
 
       if (visibilityPercentage >= delayThreshold) {
         const adjustedProgress = Math.max(
