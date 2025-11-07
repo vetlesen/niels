@@ -61,6 +61,25 @@ function DraggableImage({
   const lastRotationRef = useRef(0);
   const smoothingFactorRef = useRef(0.3);
 
+  // Universal position sync function
+  const syncVisualToBasePosition = () => {
+    console.log(`Image ${index} - Syncing position:`, {
+      basePosition: { x: position.x, y: position.y },
+      rotation: rotation,
+    });
+
+    // Update base positions with current base position (no spreading calculation)
+    if (basePositions && basePositions[index]) {
+      const updatedPositions = [...basePositions];
+      updatedPositions[index] = {
+        x: position.x,
+        y: position.y,
+        rotation: rotation,
+      };
+      onPositionUpdate(updatedPositions);
+    }
+  };
+
   // Use base positions from parent array
   useEffect(() => {
     if (basePositions && basePositions[index]) {
@@ -97,6 +116,8 @@ function DraggableImage({
     ) {
       setIsSettling(false);
       velocityRef.current = { x: 0, y: 0 };
+      // Sync position when momentum ends
+      syncVisualToBasePosition();
       return;
     }
 
@@ -129,31 +150,8 @@ function DraggableImage({
     setIsZoomed(!isZoomed);
     onBringToFront(index);
 
-    // Update the base position to current VISUAL position when scaling
-    if (basePositions && basePositions[index]) {
-      // Calculate current visual position (including scroll spreading)
-      const spreadAmount = scrollProgress * 300;
-      const randomAngle = seededRandom(index * 1337) * Math.PI * 2;
-      const randomDistance = seededRandom(index * 2674) * spreadAmount;
-      const randomOffsetX = seededRandom(index * 4011) * 100 - 50;
-      const randomOffsetY = seededRandom(index * 5348) * 100 - 50;
-      const spreadX = Math.cos(randomAngle) * randomDistance + randomOffsetX;
-      const spreadY = Math.sin(randomAngle) * randomDistance + randomOffsetY;
-
-      const isCollected = position.x === 0 && position.y === 0;
-      const currentVisualX =
-        position.x + (isCollected ? spreadX * 0.1 : spreadX);
-      const currentVisualY =
-        position.y + (isCollected ? spreadY * 0.1 : spreadY);
-
-      const updatedPositions = [...basePositions];
-      updatedPositions[index] = {
-        x: currentVisualX,
-        y: currentVisualY,
-        rotation: rotation,
-      };
-      onPositionUpdate(updatedPositions);
-    }
+    // Sync position after zoom
+    syncVisualToBasePosition();
   };
 
   // Get distance between two touch points
@@ -189,40 +187,9 @@ function DraggableImage({
     velocityRef.current = { x: 0, y: 0 };
     lastTimeRef.current = Date.now();
 
-    // Calculate spread position based on scroll with random distribution
-    const spreadAmount = scrollProgress * 300; // Increased spread distance
-
-    // Use seeded random for consistent but random spread positions
-    const randomAngle = seededRandom(index * 1337) * Math.PI * 2;
-    const randomDistance = seededRandom(index * 2674) * spreadAmount;
-    const randomOffsetX = seededRandom(index * 4011) * 100 - 50; // Additional random offset
-    const randomOffsetY = seededRandom(index * 5348) * 100 - 50;
-
-    const spreadX = Math.cos(randomAngle) * randomDistance + randomOffsetX;
-    const spreadY = Math.sin(randomAngle) * randomDistance + randomOffsetY;
-
-    // Get the current visual position from the transform
-    if (imageRef.current) {
-      const transform = imageRef.current.style.transform;
-      const match = transform.match(
-        /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
-      );
-      if (match) {
-        const currentX = parseFloat(match[1]) - spreadX;
-        const currentY = parseFloat(match[2]) - spreadY;
-        const currentRotation = parseFloat(match[3]);
-        setPosition({ x: currentX, y: currentY });
-        setRotation(currentRotation);
-        setInitialPosition({ x: currentX, y: currentY });
-        lastPositionRef.current = { x: currentX, y: currentY };
-      } else {
-        setInitialPosition(position);
-        lastPositionRef.current = position;
-      }
-    } else {
-      setInitialPosition(position);
-      lastPositionRef.current = position;
-    }
+    // Use current position as initial position - no complex calculations
+    setInitialPosition({ x: position.x, y: position.y });
+    lastPositionRef.current = { x: position.x, y: position.y };
 
     setIsDragging(true);
     setDragStart({ x: e.clientX, y: e.clientY });
@@ -267,6 +234,9 @@ function DraggableImage({
       Math.abs(velocityRef.current.y) > 0.5
     ) {
       setIsSettling(true);
+    } else {
+      // Sync position immediately if no momentum
+      syncVisualToBasePosition();
     }
   };
 
@@ -306,40 +276,9 @@ function DraggableImage({
     velocityRef.current = { x: 0, y: 0 };
     lastTimeRef.current = Date.now();
 
-    // Calculate spread position based on scroll with random distribution (same as mouse)
-    const spreadAmount = scrollProgress * 300; // Increased spread distance
-
-    // Use seeded random for consistent but random spread positions (same as mouse)
-    const randomAngle = seededRandom(index * 1337) * Math.PI * 2;
-    const randomDistance = seededRandom(index * 2674) * spreadAmount;
-    const randomOffsetX = seededRandom(index * 4011) * 100 - 50; // Additional random offset
-    const randomOffsetY = seededRandom(index * 5348) * 100 - 50;
-
-    const spreadX = Math.cos(randomAngle) * randomDistance + randomOffsetX;
-    const spreadY = Math.sin(randomAngle) * randomDistance + randomOffsetY;
-
-    // Get the current visual position from the transform
-    if (imageRef.current) {
-      const transform = imageRef.current.style.transform;
-      const match = transform.match(
-        /translate\(([^,]+),\s*([^)]+)\)\s*rotate\(([^)]+)\)/
-      );
-      if (match) {
-        const currentX = parseFloat(match[1]) - spreadX;
-        const currentY = parseFloat(match[2]) - spreadY;
-        const currentRotation = parseFloat(match[3]);
-        setPosition({ x: currentX, y: currentY });
-        setRotation(currentRotation);
-        setInitialPosition({ x: currentX, y: currentY });
-        lastPositionRef.current = { x: currentX, y: currentY };
-      } else {
-        setInitialPosition(position);
-        lastPositionRef.current = position;
-      }
-    } else {
-      setInitialPosition(position);
-      lastPositionRef.current = position;
-    }
+    // Use current position as initial position - no complex calculations
+    setInitialPosition({ x: position.x, y: position.y });
+    lastPositionRef.current = { x: position.x, y: position.y };
 
     setIsDragging(true);
     setDragStart({ x: touch.clientX, y: touch.clientY });
@@ -435,6 +374,9 @@ function DraggableImage({
       Math.abs(velocityRef.current.y) > 0.5
     ) {
       setIsSettling(true);
+    } else {
+      // Sync position immediately if no momentum
+      syncVisualToBasePosition();
     }
   };
 
@@ -470,12 +412,9 @@ function DraggableImage({
   const spreadX = Math.cos(randomAngle) * randomDistance + randomOffsetX;
   const spreadY = Math.sin(randomAngle) * randomDistance + randomOffsetY;
 
-  // Check if image is in collected state (at center)
-  const isCollected = position.x === 0 && position.y === 0;
-
-  // Reduce or disable spreading for collected images
-  const finalX = position.x + (isCollected ? spreadX * 0.1 : spreadX);
-  const finalY = position.y + (isCollected ? spreadY * 0.1 : spreadY);
+  // Disable spreading entirely - use only base positions
+  const finalX = position.x;
+  const finalY = position.y;
 
   return (
     <div
