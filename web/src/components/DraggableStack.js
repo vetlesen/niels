@@ -36,6 +36,9 @@ function DraggableImage({
 
   const [isDragging, setIsDragging] = useState(false);
   const [isSettling, setIsSettling] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
+  const [scale, setScale] = useState(1);
+  const [isPinching, setIsPinching] = useState(false);
 
   const [position, setPosition] = useState({
     x: index * 5,
@@ -45,6 +48,11 @@ function DraggableImage({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [initialPosition, setInitialPosition] = useState({ x: 0, y: 0 });
   const [zIndex, setZIndex] = useState(totalImages - index);
+
+  // Pinch gesture state
+  const [initialDistance, setInitialDistance] = useState(0);
+  const [initialScale, setInitialScale] = useState(1);
+  const lastClickTimeRef = useRef(0);
 
   // Use base positions from parent array
   useEffect(() => {
@@ -100,8 +108,35 @@ function DraggableImage({
     };
   }, [isSettling]);
 
+  // Double-click zoom functionality
+  const handleDoubleClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const newScale = isZoomed ? 1 : 2;
+    setScale(newScale);
+    setIsZoomed(!isZoomed);
+    onBringToFront(index);
+  };
+
+  // Get distance between two touch points
+  const getDistance = (touch1, touch2) => {
+    const dx = touch1.clientX - touch2.clientX;
+    const dy = touch1.clientY - touch2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
   const handleMouseDown = (e) => {
     e.preventDefault();
+
+    // Handle double-click detection
+    const now = Date.now();
+    const timeDiff = now - lastClickTimeRef.current;
+    if (timeDiff < 300) {
+      handleDoubleClick(e);
+      return;
+    }
+    lastClickTimeRef.current = now;
 
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -193,6 +228,20 @@ function DraggableImage({
 
   // Touch events
   const handleTouchStart = (e) => {
+    // Handle pinch-to-zoom with two fingers
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const distance = getDistance(touch1, touch2);
+
+      setIsPinching(true);
+      setInitialDistance(distance);
+      setInitialScale(scale);
+      onBringToFront(index);
+      return;
+    }
+
     const touch = e.touches[0];
 
     if (animationFrameRef.current) {
@@ -243,8 +292,24 @@ function DraggableImage({
   };
 
   const handleTouchMove = (e) => {
-    if (!isDragging) return;
     e.preventDefault();
+
+    // Handle pinch-to-zoom
+    if (isPinching && e.touches.length === 2) {
+      const touch1 = e.touches[0];
+      const touch2 = e.touches[1];
+      const currentDistance = getDistance(touch1, touch2);
+
+      if (initialDistance > 0) {
+        const scaleChange = currentDistance / initialDistance;
+        const newScale = Math.max(0.5, Math.min(3, initialScale * scaleChange));
+        setScale(newScale);
+        setIsZoomed(newScale > 1);
+      }
+      return;
+    }
+
+    if (!isDragging) return;
 
     const touch = e.touches[0];
     const now = Date.now();
@@ -274,6 +339,7 @@ function DraggableImage({
 
   const handleTouchEnd = () => {
     setIsDragging(false);
+    setIsPinching(false);
     if (
       Math.abs(velocityRef.current.x) > 0.5 ||
       Math.abs(velocityRef.current.y) > 0.5
@@ -340,13 +406,14 @@ function DraggableImage({
         <img
           src={image.asset.url}
           alt={`Stack image ${index + 1}`}
-          className="pointer-events-none block"
+          className="pointer-events-none block transition-transform duration-300 ease-out"
           draggable={false}
           style={{
             maxWidth: "200px",
             maxHeight: "300px",
             width: "auto",
             height: "auto",
+            transform: `scale(${scale})`,
           }}
         />
       ) : image?.asset?.playbackId ? (
@@ -354,18 +421,24 @@ function DraggableImage({
           playbackId={image.asset.playbackId}
           timestamp={image.timestamp || "0:00"}
           isHovered={true}
-          className="pointer-events-none block"
+          className="pointer-events-none block transition-transform duration-300 ease-out"
           style={{
             maxWidth: "200px",
             maxHeight: "300px",
             width: "auto",
             height: "auto",
+            transform: `scale(${scale})`,
           }}
           maxResolution="270p"
           loopDuration={60}
         />
       ) : (
-        <div className="w-48 h-64 bg-gray-100 flex items-center justify-center text-gray-500">
+        <div
+          className="w-48 h-64 bg-gray-100 flex items-center justify-center text-gray-500 transition-transform duration-300 ease-out"
+          style={{
+            transform: `scale(${scale})`,
+          }}
+        >
           Item {index + 1}
         </div>
       )}
@@ -666,7 +739,7 @@ export default function DraggableStack({
   return (
     <>
       <div
-        className="w-full sticky top-0 pt-4 z-50 mt-20 transition-colors duration-300 ease-in-out"
+        className="w-full sticky top-0 pt-4 z-9999 mt-20 transition-colors duration-300 ease-in-out"
         style={{
           backgroundColor:
             sectionRef.current?.colorChangeState && selectedColor
