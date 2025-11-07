@@ -80,19 +80,42 @@ function DraggableImage({
     }
   };
 
-  // Use base positions from parent array
+  // Use base positions from parent array - but don't override user-dragged positions
   useEffect(() => {
-    if (basePositions && basePositions[index]) {
+    if (
+      basePositions &&
+      basePositions[index] &&
+      !isDragging &&
+      !isSettling &&
+      !isPinching
+    ) {
       const basePos = basePositions[index];
-      setPosition({ x: basePos.x, y: basePos.y });
-      setRotation(basePos.rotation);
-      lastPositionRef.current = { x: basePos.x, y: basePos.y };
+      // Only update if the position has actually changed
+      if (
+        position.x !== basePos.x ||
+        position.y !== basePos.y ||
+        rotation !== basePos.rotation
+      ) {
+        setPosition({ x: basePos.x, y: basePos.y });
+        setRotation(basePos.rotation);
+        lastPositionRef.current = { x: basePos.x, y: basePos.y };
 
-      // Update performance refs to match new base positions
-      lastScaleRef.current = scale;
-      lastRotationRef.current = basePos.rotation;
+        // Update performance refs to match new base positions
+        lastScaleRef.current = scale;
+        lastRotationRef.current = basePos.rotation;
+      }
     }
-  }, [basePositions, index, scale]);
+  }, [
+    basePositions,
+    index,
+    scale,
+    isDragging,
+    isSettling,
+    isPinching,
+    position.x,
+    position.y,
+    rotation,
+  ]);
 
   // Enhanced physics simulation for momentum
   const applyMomentum = () => {
