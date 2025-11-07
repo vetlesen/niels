@@ -34,6 +34,18 @@ export function ThemeProvider({ children }) {
     }
   }, [searchParams, pathname, router]);
 
+  // Reset custom color when navigating away from work pages or to specific page types
+  useEffect(() => {
+    const isWorkPage = pathname.startsWith("/work/");
+    const isAboutPage = pathname === "/about";
+    const isHomepage = pathname === "/";
+
+    // Reset custom color when navigating to pages that should have specific themes
+    if (isAboutPage || isHomepage || !isWorkPage) {
+      setCustomColor(null);
+    }
+  }, [pathname]);
+
   useEffect(() => {
     // Apply theme classes to body using Tailwind
     document.body.className = "";

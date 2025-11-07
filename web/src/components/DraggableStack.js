@@ -202,11 +202,17 @@ function DraggableImage({
     velocityRef.current = { x: 0, y: 0 };
     lastTimeRef.current = Date.now();
 
-    // Calculate spread position based on scroll
-    const spreadAmount = scrollProgress * 180;
-    const angle = (index / totalImages) * Math.PI * 2;
-    const spreadX = Math.cos(angle) * spreadAmount;
-    const spreadY = Math.sin(angle) * spreadAmount;
+    // Calculate spread position based on scroll with random distribution (same as mouse)
+    const spreadAmount = scrollProgress * 300; // Increased spread distance
+
+    // Use seeded random for consistent but random spread positions (same as mouse)
+    const randomAngle = seededRandom(index * 1337) * Math.PI * 2;
+    const randomDistance = seededRandom(index * 2674) * spreadAmount;
+    const randomOffsetX = seededRandom(index * 4011) * 100 - 50; // Additional random offset
+    const randomOffsetY = seededRandom(index * 5348) * 100 - 50;
+
+    const spreadX = Math.cos(randomAngle) * randomDistance + randomOffsetX;
+    const spreadY = Math.sin(randomAngle) * randomDistance + randomOffsetY;
 
     // Get the current visual position from the transform
     if (imageRef.current) {
