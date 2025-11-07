@@ -68,6 +68,13 @@ function ThumbnailWrapper({
     return () => clearTimeout(timeout);
   }, [isVisible, index]);
 
+  // Determine the aspect ratio for custom media
+  const customAspectRatio = thumbnail.video?.asset?.data?.aspect_ratio
+    ? thumbnail.video.asset.data.aspect_ratio.replace(":", "/")
+    : thumbnail.image?.asset
+    ? cssAspectRatio
+    : cssAspectRatio;
+
   return (
     <div
       ref={thumbnailRef}
@@ -76,9 +83,36 @@ function ThumbnailWrapper({
       }`}
       onMouseEnter={() => setHoveredThumbnail(thumbnailId)}
       onMouseLeave={() => setHoveredThumbnail(null)}
-      style={{ aspectRatio: cssAspectRatio }}
+      style={{ aspectRatio: customAspectRatio }}
     >
       {shouldLoad ? (
+        // Check if custom image is provided
+        thumbnail.image?.asset?.url ? (
+          <Image
+            src={thumbnail.image.asset.url}
+            alt="Custom thumbnail"
+            width={0}
+            height={0}
+            sizes="(min-width: 1536px) 8vw, 120px"
+            loading="lazy"
+            decoding="async"
+            className="object-cover w-[120px] h-auto 2xl:w-[8vw]"
+            style={{ aspectRatio: customAspectRatio }}
+          />
+        ) : // Check if custom video is provided
+        thumbnail.video?.asset?.playbackId ? (
+          <VideoThumbnail
+            playbackId={thumbnail.video.asset.playbackId}
+            timestamp="00:00"
+            isHovered={
+              isShowcase
+                ? hoveredWork === itemId
+                : hoveredWork === itemId && itemCategory === activeFilter
+            }
+            className="w-[120px] h-auto 2xl:w-[8vw]"
+            style={{ aspectRatio: customAspectRatio }}
+          />
+        ) : // Fall back to timestamp-based thumbnails
         thumbnail.type === "image" ? (
           <Image
             src={`https://image.mux.com/${playbackId}/thumbnail.webp?width=480&time=${thumbnail.timestamp
@@ -109,7 +143,7 @@ function ThumbnailWrapper({
       ) : (
         <div
           className="bg-gray-800 w-[120px] h-auto 2xl:w-[8vw]"
-          style={{ aspectRatio: cssAspectRatio }}
+          style={{ aspectRatio: customAspectRatio }}
         />
       )}
     </div>

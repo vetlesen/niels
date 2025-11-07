@@ -179,6 +179,7 @@ export default async function WorkDetail({ params, searchParams }) {
         <DraggableStack
           stackImages={work.stack}
           imagePalettes={[
+            work.colorOverwrite,
             work.imagePalette0,
             work.imagePalette1,
             work.imagePalette2,

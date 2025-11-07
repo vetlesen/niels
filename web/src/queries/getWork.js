@@ -24,8 +24,27 @@ export async function getWork() {
     },
     thumbnails[] {
       timestamp,
-      type
-    }
+      type,
+      image {
+        asset-> {
+          _id,
+          url
+        }
+      },
+      video {
+        asset-> {
+          _id,
+          playbackId,
+          assetId,
+          status,
+          data {
+            duration,
+            aspect_ratio
+          }
+        }
+      }
+    },
+    colorOverwrite
   }`;
 
   try {

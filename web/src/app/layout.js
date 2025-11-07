@@ -3,6 +3,7 @@ import "./globals.css";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
 import { getSettings } from "../queries/getSettings";
+import PlausibleAnalytics from "../components/PlausibleAnalytics";
 
 import { ThemeProvider } from "../contexts/ThemeContext";
 
@@ -64,6 +65,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body className={`antialiased`}>
+        <PlausibleAnalytics />
         <Suspense fallback={null}>
           <ThemeProvider>
             <Navigation />

@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@mux/mux-player-react": "^3.6.1",
+    "@plausible-analytics/tracker": "^0.4.4",
     "@portabletext/react": "^4.0.3",
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.4.0",

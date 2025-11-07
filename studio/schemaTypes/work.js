@@ -107,12 +107,20 @@ export default {
               title: "Timestamp (MM:SS)",
               type: "string",
               description:
-                "Enter time in format MM:SS (e.g., 01:30 for 1 minute 30 seconds)",
+                "Enter time in format MM:SS (e.g., 01:30 for 1 minute 30 seconds). Leave empty if uploading custom media below.",
               validation: (Rule) =>
-                Rule.regex(/^[0-9]{1,2}:[0-5][0-9]$/, {
-                  name: "timestamp",
-                  invert: false,
-                }).error("Please enter time in MM:SS format (e.g., 01:30)"),
+                Rule.custom((timestamp, context) => {
+                  const { image, video } = context.parent;
+                  // If no custom media is provided, timestamp is required
+                  if (!image && !video && !timestamp) {
+                    return "Either provide a timestamp or upload custom media (image or video)";
+                  }
+                  // If timestamp is provided, validate format
+                  if (timestamp && !/^[0-9]{1,2}:[0-5][0-9]$/.test(timestamp)) {
+                    return "Please enter time in MM:SS format (e.g., 01:30)";
+                  }
+                  return true;
+                }),
             },
             {
               name: "type",
@@ -125,6 +133,22 @@ export default {
                 ],
                 layout: "radio",
               },
+            },
+            {
+              name: "image",
+              title: "Custom Image",
+              type: "image",
+              description:
+                "Upload a custom image to use instead of a video timestamp. This will override the timestamp if provided.",
+              hidden: ({ parent }) => parent?.video,
+            },
+            {
+              name: "video",
+              title: "Custom Video Loop",
+              type: "mux.video",
+              description:
+                "Upload a custom video loop to use instead of a video timestamp. This will override the timestamp if provided.",
+              hidden: ({ parent }) => parent?.image,
             },
           ],
         },
@@ -221,6 +245,13 @@ export default {
           lists: [],
         },
       ],
+    },
+    {
+      name: "colorOverwrite",
+      title: "Custom color in the stack",
+      description:
+        "Add a hex color you want to to be the first color in the array e.g. #445544",
+      type: "string",
     },
     {
       name: "stack",
