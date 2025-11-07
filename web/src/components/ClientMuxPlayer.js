@@ -138,7 +138,7 @@ export default function ClientMuxPlayer({
       {/* Custom Play/Pause Button */}
       {isLoaded && (
         <div
-          className="absolute inset-0 z-50 flex justify-center items-center mix-blend-difference hover:mix-blend-normal pointer-events-none"
+          className="absolute inset-0 z-50 flex justify-center items-center group hover:mix-blend-normal mix-blend-difference pointer-events-none"
           onClick={togglePlayPause}
           style={{
             opacity:
@@ -146,8 +146,10 @@ export default function ClientMuxPlayer({
             transition: "opacity 0.3s ease-in-out",
           }}
         >
-          <button className="pointer-events-auto bg-opacity-50 hover:bg-opacity-70 text-white cursor-pointer transition-all duration-300 mix-blend-difference h-[70%] w-full ">
-            {!hasUserInteracted ? "Play" : isPlaying ? "Pause" : "Play"}
+          <button className="pointer-events-auto bg-opacity-50 hover:bg-opacity-70 cursor-pointer transition-all duration-300 h-[70%] w-full items-center flex justify-center">
+            <div className="p-1 w-fit group-hover:text-black group-hover:bg-white">
+              {!hasUserInteracted ? "Play" : isPlaying ? "Pause" : "Play"}
+            </div>
           </button>
         </div>
       )}

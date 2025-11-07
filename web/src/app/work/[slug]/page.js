@@ -95,7 +95,7 @@ export default async function WorkDetail({ params, searchParams }) {
             <p className="font-normal">{work.type}</p>
             <p className="font-normal">{work.year}</p>
           </div>
-          <div className="w-full grid grid-cols-1 md:grid-cols-2 px-4">
+          <div className="w-full grid grid-cols-1 md:grid-cols-2 px-4 gap-12 md:gap-0">
             {/* Credits */}
             {work.credits && work.credits.length > 0 && (
               <div className="grid-span-1">
