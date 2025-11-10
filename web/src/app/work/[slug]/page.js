@@ -6,6 +6,9 @@ import DraggableStackWrapper from "../../../components/DraggableStackWrapper";
 import WorkPasswordWrapper from "../../../components/WorkPasswordWrapper";
 import { notFound } from "next/navigation";
 
+// Revalidate this page every 60 seconds
+export const revalidate = 60;
+
 export async function generateMetadata({ params }) {
   const { slug } = await params;
   const work = await getWorkBySlug(slug);

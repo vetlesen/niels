@@ -3,6 +3,9 @@ import { useState, use } from "react";
 import { getShowcaseBySlug } from "../../../../queries/getShowcaseBySlug";
 import Link from "next/link";
 
+// Revalidate this page every 60 seconds
+export const revalidate = 60;
+
 export default function PasswordPage({ params }) {
   const [passwordInput, setPasswordInput] = useState("");
   const [error, setError] = useState("");
