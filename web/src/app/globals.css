@@ -2,8 +2,8 @@
 
 @font-face {
   font-family: "monument";
-  src: url("/font/ABCMonumentGrotesk-Medium-Trial.woff2") format("woff2"),
-    url("/font/ABCMonumentGrotesk-Medium-Trial.woff") format("woff");
+  src: url("/font/ABCMonumentGrotesk-Medium.woff2") format("woff2"),
+    url("/font/ABCMonumentGrotesk-Medium.woff") format("woff");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
@@ -11,8 +11,8 @@
 
 @font-face {
   font-family: "monument";
-  src: url("/font/ABCMonumentGrotesk-Regular-Trial.woff2") format("woff2"),
-    url("/font/ABCMonumentGrotesk-Regular-Trial.woff") format("woff");
+  src: url("/font/ABCMonumentGrotesk-Regular.woff2") format("woff2"),
+    url("/font/ABCMonumentGrotesk-Regular.woff") format("woff");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
