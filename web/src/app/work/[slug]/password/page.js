@@ -3,6 +3,9 @@ import { useState, use } from "react";
 import { getWorkBySlug } from "../../../../queries/getWorkBySlug";
 import Link from "next/link";
 
+// Revalidate this page every 60 seconds
+export const revalidate = 60;
+
 export default function WorkPasswordPage({ params }) {
   const [passwordInput, setPasswordInput] = useState("");
   const [error, setError] = useState("");

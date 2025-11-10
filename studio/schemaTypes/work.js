@@ -272,5 +272,19 @@ export default {
         },
       ],
     },
+    {
+      name: "badge",
+      title: "Badge",
+      type: "array",
+      of: [{ type: "string" }],
+      options: {
+        list: [
+          { title: "Vimeo Staff Picks", value: "vimeo-staff-picks" },
+          { title: "Directors Library", value: "directors-library" },
+        ],
+        layout: "list",
+      },
+      description: "Select applicable badges for this work",
+    },
   ],
 };

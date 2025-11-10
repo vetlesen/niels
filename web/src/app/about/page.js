@@ -6,6 +6,9 @@ import { PortableText } from "@portabletext/react";
 // comps
 import HeroBuilder from "@/components/HeroBuilder";
 
+// Revalidate this page every 60 seconds
+export const revalidate = 60;
+
 export async function generateMetadata() {
   const settings = await getSettings();
 
