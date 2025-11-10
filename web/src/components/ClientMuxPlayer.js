@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import MuxPlayer from "@mux/mux-player-react";
 
 export default function ClientMuxPlayer({
@@ -26,8 +26,10 @@ export default function ClientMuxPlayer({
   const [videoAspectRatio, setVideoAspectRatio] = useState(
     aspectRatio || "16/9"
   );
+  const [showControls, setShowControls] = useState(true);
   const playerRef = useRef(null);
   const containerRef = useRef(null);
+  const fadeTimeoutRef = useRef(null);
 
   const handleError = (event) => {
     console.error("Mux Player Error:", event);
@@ -66,10 +68,25 @@ export default function ClientMuxPlayer({
 
   const handlePlay = () => {
     setIsPlaying(true);
+    // Show controls briefly when playing
+    setShowControls(true);
+    // Start fade-out timer after 2 seconds
+    if (fadeTimeoutRef.current) {
+      clearTimeout(fadeTimeoutRef.current);
+    }
+    fadeTimeoutRef.current = setTimeout(() => {
+      setShowControls(false);
+    }, 2000);
   };
 
   const handlePause = () => {
     setIsPlaying(false);
+    // Show controls when paused
+    setShowControls(true);
+    // Clear any existing fade-out timer
+    if (fadeTimeoutRef.current) {
+      clearTimeout(fadeTimeoutRef.current);
+    }
   };
 
   const togglePlayPause = () => {
@@ -81,6 +98,14 @@ export default function ClientMuxPlayer({
         setIsMuted(false);
         setHasUserInteracted(true);
         playerRef.current.play();
+        // Show controls and start fade-out timer
+        setShowControls(true);
+        if (fadeTimeoutRef.current) {
+          clearTimeout(fadeTimeoutRef.current);
+        }
+        fadeTimeoutRef.current = setTimeout(() => {
+          setShowControls(false);
+        }, 2000);
       } else {
         // Normal play/pause toggle after first interaction
         if (isPlaying) {
@@ -101,6 +126,15 @@ export default function ClientMuxPlayer({
       }
     }
   };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (fadeTimeoutRef.current) {
+        clearTimeout(fadeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Validate playbackId
   if (!playbackId) {
@@ -142,7 +176,10 @@ export default function ClientMuxPlayer({
           onClick={togglePlayPause}
           style={{
             opacity:
-              !hasUserInteracted || (hasUserInteracted && isHovering) ? 1 : 0,
+              !hasUserInteracted ||
+              (hasUserInteracted && (isHovering || showControls))
+                ? 1
+                : 0,
             transition: "opacity 0.3s ease-in-out",
           }}
         >
