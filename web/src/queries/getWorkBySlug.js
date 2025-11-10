@@ -33,6 +33,7 @@ export async function getWorkBySlug(slug, randomSeed = null) {
       year
     },
     info,
+    badge,
     "stackCount": count(stack),
 ${stackSlice}[] {
   _key,
@@ -64,16 +65,16 @@ ${stackSlice}[] {
     colorOverwrite
   }`;
 
-  console.log("GROQ Query:", query);
-  console.log("Query params:", { slug, randomSeed });
+  // console.log("GROQ Query:", query);
+  // console.log("Query params:", { slug, randomSeed });
 
   try {
     const work = await client.fetch(query, { slug });
-    console.log("Fetched work:", work);
-    console.log("Stack items:", work?.stack);
+    // console.log("Fetched work:", work);
+    // console.log("Stack items:", work?.stack);
     return work;
   } catch (error) {
-    console.error("Error fetching work by slug:", error);
+    // console.error("Error fetching work by slug:", error);
     return null;
   }
 }

@@ -318,7 +318,6 @@ function DraggableImage({
     };
   }, []);
 
-  console.log("image.asset", image?.asset?.data?.aspect_ratio);
   const cssAspectRatio = image?.asset?.data?.aspect_ratio
     ? image?.asset?.data?.aspect_ratio.replace(":", "/")
     : "16/9";
