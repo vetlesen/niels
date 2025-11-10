@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useTheme } from "@/contexts/ThemeContext";
 import VideoThumbnail from "./VideoThumbnail";
+import { urlFor } from "@/lib/urlFor";
 
 // Deterministic pseudo-random function
 function seededRandom(seed) {
@@ -317,6 +318,11 @@ function DraggableImage({
     };
   }, []);
 
+  console.log("image.asset", image?.asset?.data?.aspect_ratio);
+  const cssAspectRatio = image?.asset?.data?.aspect_ratio
+    ? image?.asset?.data?.aspect_ratio.replace(":", "/")
+    : "16/9";
+
   return (
     <div
       ref={imageRef}
@@ -339,6 +345,7 @@ function DraggableImage({
     >
       {image?.asset?.playbackId ? (
         // VIDEO
+        // change this to be the aspect ratio of the video!!
         <VideoThumbnail
           playbackId={image.asset.playbackId}
           timestamp={image.timestamp || "0:00"}
@@ -346,20 +353,25 @@ function DraggableImage({
           className="pointer-events-none block"
           style={{
             width: "200px",
-            height: "300px",
+            aspectRatio: cssAspectRatio,
           }}
           maxResolution="480p"
           loopDuration={60}
         />
-      ) : image?.asset?.url ? (
+      ) : image?.asset ? (
         // IMAGE
         <img
-          src={image.asset.url}
+          src={urlFor(image.asset)
+            .height(600)
+            .fit("max")
+            .auto("format")
+            .quality(85)
+            .url()}
           alt={`Stack image ${index + 1}`}
           className="pointer-events-none block"
           draggable={false}
           style={{
-            maxWidth: "200px",
+            maxWidth: "300px",
             maxHeight: "300px",
             width: "auto",
             height: "auto",

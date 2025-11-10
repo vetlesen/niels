@@ -46,7 +46,7 @@ export default function HeroBuilder({ heroContent, className = "" }) {
   return (
     <div
       ref={heroRef}
-      className={`col-span-12 flex gap-4 max-h-[65svh] bg-black p-2 mt-8 overflow-x-auto  ${className}`}
+      className={`col-span-12 flex gap-4 h-[65svh] bg-black p-2 mt-8 overflow-x-auto  ${className}`}
     >
       {heroContent.map((item, index) => {
         switch (item._type) {

@@ -22,6 +22,8 @@ export default function VideoThumbnail({
   const startTimeSeconds = timestampToSeconds(timestamp);
   const endTimeSeconds = startTimeSeconds + loopDuration;
 
+  console.log("style", style);
+
   useEffect(() => {
     const player = playerRef.current;
     if (!player) return;

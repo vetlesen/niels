@@ -34,27 +34,30 @@ export async function getWorkBySlug(slug, randomSeed = null) {
     },
     info,
     "stackCount": count(stack),
-    ${stackSlice}[] {
-      _key,
-      timestamp,
-      asset-> {
-        _id,
-        _type,
-        url,
-        playbackId,
-        metadata {
-          palette {
-            dominant,
-            vibrant,
-            lightVibrant,
-            darkVibrant,
-            muted,
-            lightMuted,
-            darkMuted
-          }
-        }
-      }
+${stackSlice}[] {
+  _key,
+  timestamp,
+  asset-> {
+    _id,
+    _type,
+    url,
+    playbackId,
+    data {
+      aspect_ratio
     },
+    metadata {
+      palette {
+        dominant,
+        vibrant,
+        lightVibrant,
+        darkVibrant,
+        muted,
+        lightMuted,
+        darkMuted
+      }
+    }
+  }
+},
     "imagePalette0": ${stackSlice}[0].asset->metadata.palette,
     "imagePalette1": ${stackSlice}[4].asset->metadata.palette,
     "imagePalette2": ${stackSlice}[8].asset->metadata.palette,
