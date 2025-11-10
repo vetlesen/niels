@@ -26,6 +26,7 @@ export default function DraggableStackWrapper({
 
       // Fetch new data with random seed
       const work = await getWorkBySlug(slug, randomStart);
+      console.log("work stack ->", work.stack);
 
       if (work && work.stack) {
         setStackImages(work.stack);
