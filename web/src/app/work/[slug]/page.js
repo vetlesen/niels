@@ -19,7 +19,7 @@ export async function generateMetadata({ params }) {
     };
   }
 
-  const title = work.title;
+  const title = `${work.title} – Niels Windfeldt`;
   const description = work.type;
 
   const metadata = {

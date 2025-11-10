@@ -27,6 +27,7 @@ export default function ClientMuxPlayer({
     aspectRatio || "16/9"
   );
   const [showControls, setShowControls] = useState(true);
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
   const playerRef = useRef(null);
   const containerRef = useRef(null);
   const fadeTimeoutRef = useRef(null);
@@ -83,9 +84,19 @@ export default function ClientMuxPlayer({
     setIsPlaying(false);
     // Show controls when paused
     setShowControls(true);
-    // Clear any existing fade-out timer
-    if (fadeTimeoutRef.current) {
-      clearTimeout(fadeTimeoutRef.current);
+    // On touch devices, fade out controls even when paused
+    if (isTouchDevice) {
+      if (fadeTimeoutRef.current) {
+        clearTimeout(fadeTimeoutRef.current);
+      }
+      fadeTimeoutRef.current = setTimeout(() => {
+        setShowControls(false);
+      }, 2000);
+    } else {
+      // On desktop, clear any existing fade-out timer and keep controls visible
+      if (fadeTimeoutRef.current) {
+        clearTimeout(fadeTimeoutRef.current);
+      }
     }
   };
 
@@ -113,6 +124,17 @@ export default function ClientMuxPlayer({
         } else {
           playerRef.current.play();
         }
+
+        // On touch devices, always fade out controls after interaction
+        if (isTouchDevice) {
+          setShowControls(true);
+          if (fadeTimeoutRef.current) {
+            clearTimeout(fadeTimeoutRef.current);
+          }
+          fadeTimeoutRef.current = setTimeout(() => {
+            setShowControls(false);
+          }, 2000);
+        }
       }
     }
   };
@@ -126,6 +148,18 @@ export default function ClientMuxPlayer({
       }
     }
   };
+
+  // Detect touch device
+  useEffect(() => {
+    const checkTouchDevice = () => {
+      setIsTouchDevice(
+        "ontouchstart" in window ||
+          navigator.maxTouchPoints > 0 ||
+          navigator.msMaxTouchPoints > 0
+      );
+    };
+    checkTouchDevice();
+  }, []);
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -177,13 +211,20 @@ export default function ClientMuxPlayer({
           style={{
             opacity:
               !hasUserInteracted ||
+              !isPlaying ||
               (hasUserInteracted && (isHovering || showControls))
                 ? 1
                 : 0,
             transition: "opacity 0.3s ease-in-out",
           }}
         >
-          <button className="pointer-events-auto bg-opacity-50 hover:bg-opacity-70 cursor-pointer transition-all duration-300 h-[70%] w-full items-center flex justify-center">
+          <button
+            className="pointer-events-auto bg-opacity-50 hover:bg-opacity-70 cursor-pointer transition-all duration-300 h-[100px] md:h-[70%] w-full items-center flex justify-center"
+            style={{
+              opacity: hasUserInteracted && isPlaying ? 0 : 1,
+              transition: "opacity 0.3s ease-in-out",
+            }}
+          >
             <div className="p-1 w-fit group-hover:text-black group-hover:bg-white">
               {!hasUserInteracted ? "Play" : isPlaying ? "Pause" : "Play"}
             </div>
