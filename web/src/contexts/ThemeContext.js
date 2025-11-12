@@ -18,6 +18,15 @@ export function ThemeProvider({ children }) {
     return "commercial";
   });
   const [customColor, setCustomColor] = useState(null);
+  const [prevPathname, setPrevPathname] = useState(pathname);
+
+  // Scroll to top when pathname changes (but not when only search params change)
+  useEffect(() => {
+    if (pathname !== prevPathname) {
+      window.scrollTo(0, 0);
+      setPrevPathname(pathname);
+    }
+  }, [pathname, prevPathname]);
 
   // Sync with URL on mount and when searchParams change
   useEffect(() => {
