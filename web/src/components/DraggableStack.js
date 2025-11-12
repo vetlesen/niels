@@ -700,8 +700,8 @@ export default function DraggableStack({
         }}
       >
         <div className="grid grid-cols-12 mx-4 border-b pb-4">
-          <h4 className="uppercase text-sm col-span-3">stack</h4>
-          <div className="col-span-4 md:col-span-3 space-x-4 flex justify-start">
+          <h4 className="uppercase text-sm col-span-2 md:col-span-3">stack</h4>
+          <div className="col-span-5 md:col-span-3 space-x-4 flex justify-start">
             <button
               className="text-sm opacity-90 hover:opacity-100 transition-opacity"
               onClick={handleExpand}
@@ -764,8 +764,8 @@ export default function DraggableStack({
                 </button>
 
                 {isDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-2 bg-white shadow-lg rounded-lg p-2 z-50">
-                    <div className="flex flex-col gap-1">
+                  <div className="absolute top-full right-0 mt-6 p-2 z-50">
+                    <div className="flex flex-col gap-2">
                       {paletteColors.map((item, index) => (
                         <button
                           key={index}
@@ -773,7 +773,7 @@ export default function DraggableStack({
                             handleColorChange(item.color);
                             setIsDropdownOpen(false);
                           }}
-                          className={`h-8 w-24 rounded transition-all ${
+                          className={`h-8 w-20 transition-all ${
                             selectedColor === item.color
                               ? "ring-2 ring-offset-2 ring-black"
                               : ""
