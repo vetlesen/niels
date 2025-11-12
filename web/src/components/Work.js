@@ -60,7 +60,7 @@ function ThumbnailWrapper({
   useEffect(() => {
     if (!isVisible) return;
 
-    const staggerDelay = index * 40;
+    const staggerDelay = index * 20;
     const timeout = setTimeout(() => {
       setShouldLoad(true);
     }, staggerDelay);
@@ -193,7 +193,7 @@ function WorkItem({
   useEffect(() => {
     if (!isVisible) return;
 
-    const staggerDelay = itemIndex * 100; // 80ms delay per work item
+    const staggerDelay = itemIndex * 50;
     const timeout = setTimeout(() => {
       setShouldRender(true);
     }, staggerDelay);
